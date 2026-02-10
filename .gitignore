@@ -1,0 +1,5 @@
+materials_discovery/.venv/
+materials_discovery/data/gnome_data/*.zip
+materials_discovery/data/gnome_data/*.csv
+__pycache__/
+*.pyc
