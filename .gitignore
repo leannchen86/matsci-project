@@ -1,5 +1,7 @@
 materials_discovery/.venv/
 materials_discovery/data/gnome_data/*.zip
 materials_discovery/data/gnome_data/*.csv
+materials_discovery/data/auditor_db/
+materials_discovery/data/extracted_cifs/
 __pycache__/
 *.pyc
