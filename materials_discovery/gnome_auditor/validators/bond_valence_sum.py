@@ -14,7 +14,7 @@ import math
 from pymatgen.core import Structure, Species
 from pymatgen.analysis.bond_valence import calculate_bv_sum
 
-from gnome_auditor.config import BVS_TOLERANCE, GII_THRESHOLD, OXI_CONFIDENCE_MAP
+from gnome_auditor.config import BVS_TOLERANCE, GII_REFERENCE_ICSD, OXI_CONFIDENCE_MAP
 from gnome_auditor.validators.base import BaseValidator, ValidationResult
 
 
@@ -38,7 +38,7 @@ class BondValenceSumValidator(BaseValidator):
 
     def validate(self, structure: Structure, material_info: dict,
                  oxi_assignment: dict | None = None) -> ValidationResult:
-        if oxi_assignment is None or oxi_assignment["confidence"] == "none":
+        if oxi_assignment is None or oxi_assignment["confidence"] == "no_assignment":
             return self._skip_no_params(
                 "No oxidation state assignment available",
                 details={"oxi_state_confidence": "none"},
@@ -101,7 +101,8 @@ class BondValenceSumValidator(BaseValidator):
 
         # Global Instability Index
         gii = math.sqrt(sum_sq_dev / n_computed)
-        passed = gii < GII_THRESHOLD
+        # passed is legacy — GII is a continuous metric, not a binary judgment
+        passed = gii < GII_REFERENCE_ICSD
 
         worst_sites = sorted(site_results, key=lambda x: x["deviation"], reverse=True)[:5]
         n_bad_sites = sum(1 for s in site_results if s["relative_deviation"] > BVS_TOLERANCE)
@@ -113,7 +114,7 @@ class BondValenceSumValidator(BaseValidator):
             score=round(gii, 4),
             details={
                 "global_instability_index": round(gii, 4),
-                "gii_threshold": GII_THRESHOLD,
+                "gii_reference_icsd": GII_REFERENCE_ICSD,
                 "n_sites_analyzed": n_computed,
                 "n_sites_total": len(dec_struct),
                 "n_sites_above_tolerance": n_bad_sites,

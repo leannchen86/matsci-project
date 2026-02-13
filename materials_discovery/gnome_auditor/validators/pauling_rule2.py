@@ -19,7 +19,7 @@ class PaulingRule2Validator(BaseValidator):
 
     def validate(self, structure: Structure, material_info: dict,
                  oxi_assignment: dict | None = None) -> ValidationResult:
-        if oxi_assignment is None or oxi_assignment["confidence"] == "none":
+        if oxi_assignment is None or oxi_assignment["confidence"] == "no_assignment":
             return self._skip_no_params(
                 "No oxidation state assignment available",
                 details={"oxi_state_confidence": "none"},

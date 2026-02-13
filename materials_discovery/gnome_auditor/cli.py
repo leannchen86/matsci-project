@@ -67,16 +67,24 @@ def cmd_stats(args):
 
     if summary:
         print(f"\nValidation Summary:")
-        print(f"  {'Check':<25} {'Computed':>8} {'Passed':>8} {'Failed':>8} {'Skipped':>8} {'Errors':>8}")
-        print(f"  {'-'*25} {'-'*8} {'-'*8} {'-'*8} {'-'*8} {'-'*8}")
+        print(f"  {'Check':<25} {'Tier':>4} {'Computed':>8} {'Skipped':>8} {'Errors':>8} {'Mean Score':>10} {'Min':>8} {'Max':>8}")
+        print(f"  {'-'*25} {'-'*4} {'-'*8} {'-'*8} {'-'*8} {'-'*10} {'-'*8} {'-'*8}")
         for row in summary:
-            print(f"  {row['check_name']:<25} {row['computed']:>8} {row['passed']:>8} "
-                  f"{row['failed']:>8} {row['skipped_no_params']:>8} {row['errors']:>8}")
+            mean_s = f"{row['mean_score']:.4f}" if row.get('mean_score') is not None else "—"
+            min_s = f"{row['min_score']:.4f}" if row.get('min_score') is not None else "—"
+            max_s = f"{row['max_score']:.4f}" if row.get('max_score') is not None else "—"
+            print(f"  {row['check_name']:<25} {row['tier']:>4} {row['computed']:>8} "
+                  f"{row['skipped']:>8} {row['errors']:>8} {mean_s:>10} {min_s:>8} {max_s:>8}")
 
-    if stats["mp_match_types"]:
-        print(f"\nMP Match Types:")
-        for mt, cnt in sorted(stats["mp_match_types"].items()):
-            print(f"  {mt}: {cnt}")
+    if stats.get("compound_classes"):
+        print(f"\nCompound Classes:")
+        for cc, cnt in sorted(stats["compound_classes"].items()):
+            print(f"  {cc}: {cnt}")
+
+    if stats.get("mp_synth_status"):
+        print(f"\nMP Synth Status:")
+        for st, cnt in sorted(stats["mp_synth_status"].items()):
+            print(f"  {st}: {cnt}")
 
     print()
 

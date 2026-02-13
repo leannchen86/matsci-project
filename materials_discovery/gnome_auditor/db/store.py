@@ -11,10 +11,11 @@ from gnome_auditor.db.schema import init_db
 def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
     """Get a database connection, initializing if needed."""
     path = db_path or DB_PATH
-    conn = sqlite3.connect(str(path))
+    conn = sqlite3.connect(str(path), timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute("PRAGMA busy_timeout=30000")
     init_db(conn)
     return conn
 
@@ -28,8 +29,8 @@ def insert_material(conn, mat: dict):
         (material_id, composition, reduced_formula, elements, n_sites, volume, density,
          space_group, space_group_number, crystal_system,
          formation_energy_per_atom, decomposition_energy_per_atom, bandgap, is_train,
-         has_r2scan, r2scan_decomp_energy, oxide_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         has_r2scan, r2scan_decomp_energy, oxide_type, compound_class)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         mat["material_id"], mat["composition"], mat["reduced_formula"],
         json.dumps(mat["elements"]), mat["n_sites"], mat["volume"], mat["density"],
@@ -37,7 +38,7 @@ def insert_material(conn, mat: dict):
         mat.get("formation_energy_per_atom"), mat.get("decomposition_energy_per_atom"),
         mat.get("bandgap"), int(mat.get("is_train", False)),
         int(mat.get("has_r2scan", False)), mat.get("r2scan_decomp_energy"),
-        mat.get("oxide_type"),
+        mat.get("oxide_type"), mat.get("compound_class", "pure_oxide"),
     ))
 
 
@@ -74,11 +75,12 @@ def get_material_by_formula(conn, formula: str) -> list[dict]:
 def search_materials(conn, *, element: str | None = None,
                      crystal_system: str | None = None,
                      oxide_type: str | None = None,
+                     compound_class: str | None = None,
                      check_name: str | None = None,
                      check_passed: bool | None = None,
-                     mp_match_type: str | None = None,
+                     synth_status: str | None = None,
                      limit: int = 50) -> list[dict]:
-    """Search materials with optional filters including validation results."""
+    """Search materials with optional filters."""
     clauses = []
     params = []
     joins = []
@@ -92,6 +94,9 @@ def search_materials(conn, *, element: str | None = None,
     if oxide_type:
         clauses.append("m.oxide_type = ?")
         params.append(oxide_type)
+    if compound_class:
+        clauses.append("m.compound_class = ?")
+        params.append(compound_class)
     if check_name is not None:
         joins.append("JOIN validation_results vr ON m.material_id = vr.material_id")
         clauses.append("vr.check_name = ?")
@@ -100,10 +105,10 @@ def search_materials(conn, *, element: str | None = None,
             clauses.append("vr.passed = ?")
             params.append(int(check_passed))
             clauses.append("vr.status = 'completed'")
-    if mp_match_type:
+    if synth_status:
         joins.append("JOIN mp_cross_ref mc ON m.material_id = mc.material_id")
-        clauses.append("mc.match_type = ?")
-        params.append(mp_match_type)
+        clauses.append("mc.synth_status = ?")
+        params.append(synth_status)
 
     join_clause = " ".join(joins) if joins else ""
     where = " AND ".join(clauses) if clauses else "1=1"
@@ -131,8 +136,9 @@ def insert_oxi_assignment(conn, material_id: str, result: dict):
     """Insert or update an oxidation state assignment."""
     conn.execute("""
         INSERT OR REPLACE INTO oxidation_state_assignments
-        (material_id, method_used, oxi_states, bv_analyzer_result, guesses_result, confidence)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (material_id, method_used, oxi_states, bv_analyzer_result, guesses_result,
+         confidence, has_mixed_valence, mixed_valence_elements)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         material_id,
         result["method_used"],
@@ -140,6 +146,8 @@ def insert_oxi_assignment(conn, material_id: str, result: dict):
         json.dumps(result["bv_analyzer_result"]) if result.get("bv_analyzer_result") else None,
         json.dumps(result["guesses_result"]) if result.get("guesses_result") else None,
         result["confidence"],
+        int(result.get("has_mixed_valence", False)),
+        json.dumps(result["mixed_valence_elements"]) if result.get("mixed_valence_elements") else None,
     ))
 
 
@@ -158,6 +166,9 @@ def get_oxi_assignment(conn, material_id: str) -> dict | None:
         d["bv_analyzer_result"] = json.loads(d["bv_analyzer_result"])
     if d["guesses_result"]:
         d["guesses_result"] = json.loads(d["guesses_result"])
+    if d.get("mixed_valence_elements"):
+        d["mixed_valence_elements"] = json.loads(d["mixed_valence_elements"])
+    d["has_mixed_valence"] = bool(d.get("has_mixed_valence", 0))
     return d
 
 
@@ -198,7 +209,6 @@ def get_validation_results(conn, material_id: str) -> list[dict]:
 
 def get_validation_results_by_check(conn, check_name: str, *,
                                      status: str | None = None,
-                                     passed: bool | None = None,
                                      limit: int = 100) -> list[dict]:
     """Get validation results for a specific check across materials."""
     clauses = ["check_name = ?"]
@@ -206,9 +216,6 @@ def get_validation_results_by_check(conn, check_name: str, *,
     if status:
         clauses.append("status = ?")
         params.append(status)
-    if passed is not None:
-        clauses.append("passed = ?")
-        params.append(int(passed))
     where = " AND ".join(clauses)
     rows = conn.execute(
         f"SELECT * FROM validation_results WHERE {where} LIMIT ?",
@@ -239,12 +246,20 @@ def insert_mp_cross_ref(conn, material_id: str, data: dict):
     """Insert or update MP cross-reference data."""
     conn.execute("""
         INSERT OR REPLACE INTO mp_cross_ref
-        (material_id, mp_id, match_type, mp_is_experimental, mp_formation_energy, mp_space_group)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (material_id, chemsys, mp_ids, best_match_mp_id, match_type, synth_status,
+         mp_is_experimental, mp_formula, mp_formation_energy, mp_space_group)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        material_id, data.get("mp_id"), data.get("match_type"),
+        material_id,
+        data.get("chemsys"),
+        json.dumps(data["mp_ids"]) if data.get("mp_ids") else None,
+        data.get("best_match_mp_id"),
+        data.get("match_type"),
+        data.get("synth_status"),
         int(data["mp_is_experimental"]) if data.get("mp_is_experimental") is not None else None,
-        data.get("mp_formation_energy"), data.get("mp_space_group"),
+        data.get("mp_formula"),
+        data.get("mp_formation_energy"),
+        data.get("mp_space_group"),
     ))
 
 
@@ -256,6 +271,8 @@ def get_mp_cross_ref(conn, material_id: str) -> dict | None:
     if row is None:
         return None
     d = dict(row)
+    if d.get("mp_ids"):
+        d["mp_ids"] = json.loads(d["mp_ids"])
     d["mp_is_experimental"] = bool(d["mp_is_experimental"]) if d["mp_is_experimental"] is not None else None
     return d
 
@@ -290,17 +307,6 @@ def get_audit_summary(conn) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def get_flagged_materials(conn, *, min_failures: int = 1, limit: int = 50) -> list[dict]:
-    """Get materials with validation failures."""
-    rows = conn.execute("""
-        SELECT * FROM v_material_flags
-        WHERE n_failed >= ?
-        ORDER BY n_failed DESC
-        LIMIT ?
-    """, (min_failures, limit)).fetchall()
-    return [dict(r) for r in rows]
-
-
 def get_statistics(conn) -> dict:
     """Get overall database statistics."""
     total = conn.execute("SELECT COUNT(*) FROM materials").fetchone()[0]
@@ -309,20 +315,20 @@ def get_statistics(conn) -> dict:
         FROM oxidation_state_assignments
         GROUP BY confidence
     """).fetchall()
-    vr_counts = conn.execute("""
-        SELECT check_name, status, COUNT(*) as cnt
-        FROM validation_results
-        GROUP BY check_name, status
-    """).fetchall()
     mp_counts = conn.execute("""
-        SELECT match_type, COUNT(*) as cnt
+        SELECT synth_status, COUNT(*) as cnt
         FROM mp_cross_ref
-        GROUP BY match_type
+        GROUP BY synth_status
+    """).fetchall()
+    compound_counts = conn.execute("""
+        SELECT compound_class, COUNT(*) as cnt
+        FROM materials
+        GROUP BY compound_class
     """).fetchall()
 
     return {
         "total_materials": total,
         "oxidation_state_confidence": {r["confidence"]: r["cnt"] for r in oxi_counts},
-        "validation_coverage": [dict(r) for r in vr_counts],
-        "mp_match_types": {r["match_type"]: r["cnt"] for r in mp_counts},
+        "mp_synth_status": {r["synth_status"]: r["cnt"] for r in mp_counts if r["synth_status"]},
+        "compound_classes": {r["compound_class"]: r["cnt"] for r in compound_counts},
     }

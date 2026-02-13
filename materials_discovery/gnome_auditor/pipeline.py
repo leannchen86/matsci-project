@@ -82,6 +82,8 @@ def validate_material(material_id: str, conn=None, force: bool = False) -> dict:
             "bv_analyzer_result": oxi_result.bv_analyzer_result,
             "guesses_result": oxi_result.guesses_result,
             "confidence": oxi_result.confidence,
+            "has_mixed_valence": oxi_result.has_mixed_valence,
+            "mixed_valence_elements": oxi_result.mixed_valence_elements,
         }
         insert_oxi_assignment(conn, material_id, oxi_dict)
         conn.commit()

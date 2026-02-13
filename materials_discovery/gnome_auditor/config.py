@@ -10,6 +10,11 @@ AUDITOR_DB_DIR = DATA_DIR / "auditor_db"
 MP_CACHE_DIR = AUDITOR_DB_DIR / "mp_cache"
 EXTRACTED_CIFS_DIR = DATA_DIR / "extracted_cifs"
 
+# Gold data
+GOLD_DATA_DIR = Path(__file__).resolve().parent / "gold_data"
+SYNTH_CSV = GOLD_DATA_DIR / "mp_synth_icsd.csv"
+NOT_SYNTH_CSV = GOLD_DATA_DIR / "mp_not_synth_icsd.csv"
+
 # Data files
 SUMMARY_CSV = GNOME_DATA_DIR / "stable_materials_summary.csv"
 R2SCAN_CSV = GNOME_DATA_DIR / "stable_materials_r2scan.csv"
@@ -22,35 +27,36 @@ DB_PATH = AUDITOR_DB_DIR / "gnome_auditor.db"
 for d in [AUDITOR_DB_DIR, MP_CACHE_DIR, EXTRACTED_CIFS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-# --- Validator thresholds ---
+# --- Validator reference values ---
+# These are NOT pass/fail thresholds. They are reference baselines from the
+# literature for contextualizing continuous metrics.
 
 # Shannon radii: bond length tolerance (fraction of expected)
-SHANNON_TOLERANCE = 0.25  # 25% deviation from expected bond length
+SHANNON_TOLERANCE = 0.25  # 25% deviation — used to count violations, not to judge
 
 # Bond Valence Sum
-BVS_TOLERANCE = 0.35  # |BVS - expected| / expected < 35%
-GII_THRESHOLD = 0.2   # Global instability index threshold (v.u.)
+BVS_TOLERANCE = 0.35  # per-site relative deviation reference
+GII_REFERENCE_ICSD = 0.2   # GII baseline for ICSD experimental structures (v.u.)
 
 # Pauling Rule 2: electrostatic valence sum tolerance
-PAULING_R2_TOLERANCE = 0.25  # |sum - |valence_O|| / |valence_O| < 25%
+PAULING_R2_TOLERANCE = 0.25  # |sum - |valence_O|| / |valence_O| reference
 
 # Goldschmidt tolerance factor range for stable perovskites
 GOLDSCHMIDT_MIN = 0.71
 GOLDSCHMIDT_MAX = 1.05
 
 # Space group plausibility
-SPACEGROUP_MIN_FRACTION = 0.01  # Flag if <1% of experimental entries share this space group
+SPACEGROUP_MIN_FRACTION = 0.01
 
-# Oxidation state confidence mapping
+# Oxidation state confidence — descriptive labels, NOT quality guarantees
 OXI_CONFIDENCE_MAP = {
-    "high": 0.9,    # both methods agree
-    "medium": 0.7,  # one method succeeded
-    "low": 0.4,     # methods disagree
-    "none": 0.0,    # neither worked
+    "both_agree": 0.9,         # both methods returned same result
+    "single_method": 0.7,      # only one method succeeded
+    "methods_disagree": 0.4,   # both succeeded but gave different states
+    "no_assignment": 0.0,      # neither method could assign states
 }
 
 # Oxide type classification patterns (reduced formula element ratios)
-# Maps (A:B:O) ratios to type names
 OXIDE_TYPE_RATIOS = {
     (1, 1, 3): "ABO3",
     (1, 2, 4): "AB2O4",
@@ -59,4 +65,13 @@ OXIDE_TYPE_RATIOS = {
     (2, 2, 7): "A2B2O7",
     (1, 2, 6): "AB2O6",
     (2, 1, 3): "A2BO3",
+}
+
+# Compound class classification — identifies non-pure-oxide compounds
+# that need separate treatment because O²⁻ assumption may not hold
+ANION_ELEMENTS = {
+    "F", "Cl", "Br", "I",      # halogens → oxyhalide
+    "S", "Se", "Te",            # chalcogens → oxychalcogenide
+    "N",                        # nitrogen → oxynitride
+    "H",                        # hydrogen → oxyhydride
 }

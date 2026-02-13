@@ -51,10 +51,10 @@ class GoldschmidtValidator(BaseValidator):
                 f"Not an ABO3 perovskite (oxide_type={oxide_type})",
             )
 
-        if oxi_assignment is None or oxi_assignment["confidence"] == "none":
+        if oxi_assignment is None or oxi_assignment["confidence"] == "no_assignment":
             return self._skip_no_params(
                 "No oxidation state assignment available",
-                details={"oxi_state_confidence": "none"},
+                details={"oxi_state_confidence": "no_assignment"},
             )
 
         oxi_states = oxi_assignment["oxi_states"]

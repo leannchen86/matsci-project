@@ -10,7 +10,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from gnome_auditor.config import (
-    SUMMARY_CSV, R2SCAN_CSV, BY_ID_ZIP, EXTRACTED_CIFS_DIR, OXIDE_TYPE_RATIOS,
+    SUMMARY_CSV, R2SCAN_CSV, BY_ID_ZIP, EXTRACTED_CIFS_DIR, OXIDE_TYPE_RATIOS, ANION_ELEMENTS,
 )
 from gnome_auditor.db.store import get_connection, insert_materials_batch
 
@@ -22,6 +22,25 @@ def _is_ternary_oxide(elements_str: str) -> bool:
         return len(elements) == 3 and "O" in elements
     except (ValueError, SyntaxError):
         return False
+
+
+def _classify_compound_class(elements: list[str]) -> str:
+    """Classify compound as pure_oxide vs oxyhalide/oxychalcogenide/etc.
+
+    A ternary O-containing compound is 'pure_oxide' only if the other two
+    elements are NOT common anions (halogens, chalcogens, N, H).
+    """
+    non_o = [el for el in elements if el != "O"]
+    for el in non_o:
+        if el in {"F", "Cl", "Br", "I"}:
+            return "oxyhalide"
+        if el in {"S", "Se", "Te"}:
+            return "oxychalcogenide"
+        if el == "N":
+            return "oxynitride"
+        if el == "H":
+            return "oxyhydride"
+    return "pure_oxide"
 
 
 def _classify_oxide_type(composition: str, reduced_formula: str, elements: list[str]) -> str:
@@ -131,6 +150,7 @@ def populate_db(df: pd.DataFrame, cif_paths: dict[str, str]):
         oxide_type = _classify_oxide_type(
             row["Composition"], row["Reduced Formula"], elements
         )
+        compound_class = _classify_compound_class(elements)
 
         materials.append({
             "material_id": mat_id,
@@ -150,6 +170,7 @@ def populate_db(df: pd.DataFrame, cif_paths: dict[str, str]):
             "has_r2scan": bool(row.get("has_r2scan", False)),
             "r2scan_decomp_energy": float(row["r2scan_decomp_energy"]) if pd.notna(row.get("r2scan_decomp_energy")) else None,
             "oxide_type": oxide_type,
+            "compound_class": compound_class,
         })
 
     insert_materials_batch(conn, materials)

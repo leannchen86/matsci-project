@@ -128,7 +128,7 @@ class ShannonRadiiValidator(BaseValidator):
 
     def validate(self, structure: Structure, material_info: dict,
                  oxi_assignment: dict | None = None) -> ValidationResult:
-        if oxi_assignment is None or oxi_assignment["confidence"] == "none":
+        if oxi_assignment is None or oxi_assignment["confidence"] == "no_assignment":
             return self._skip_no_params(
                 "No oxidation state assignment available",
                 details={"oxi_state_confidence": "none"},
@@ -150,6 +150,18 @@ class ShannonRadiiValidator(BaseValidator):
         n_violations = 0
         missing_params = []
 
+        # Cache coordination numbers per site to avoid redundant CrystalNN calls
+        cn_cache = {}
+
+        def _get_cn(site_idx):
+            if site_idx not in cn_cache:
+                try:
+                    nn = cnn.get_nn_info(structure, site_idx)
+                    cn_cache[site_idx] = len(nn)
+                except Exception:
+                    cn_cache[site_idx] = None
+            return cn_cache[site_idx]
+
         for i, site in enumerate(structure):
             el_i = str(site.specie)
             oxi_i = oxi_states.get(el_i)
@@ -163,6 +175,7 @@ class ShannonRadiiValidator(BaseValidator):
                 continue
 
             coord_number = len(nn_info)
+            cn_cache[i] = coord_number
 
             r_i = _get_shannon_radius(el_i, int(oxi_i), coord_number)
             if r_i is None:
@@ -176,7 +189,9 @@ class ShannonRadiiValidator(BaseValidator):
                 if oxi_j is None:
                     continue
 
-                nn_coord = len(nn_info)  # approximate
+                nn_coord = _get_cn(nn["site_index"])
+                if nn_coord is None:
+                    nn_coord = coord_number  # fallback to central atom's CN
                 r_j = _get_shannon_radius(el_j, int(oxi_j), nn_coord)
                 if r_j is None:
                     continue
