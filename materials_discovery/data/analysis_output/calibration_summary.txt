@@ -1,0 +1,80 @@
+================================================================================
+GNoME Auditor — Gold Data Calibration Summary
+================================================================================
+
+## Novel vs Computationally Known (MP)
+
+  Bond Valence Sum (GII):
+    Novel:      n= 1914, median=0.4255, mean=0.5266, std=0.4056
+    Comp known: n=  674, median=0.4059, mean=0.4895, std=0.3092
+    Mann-Whitney U: p=2.4080e-01, effect size r=-0.0303
+    KS test: D=0.0454, p=2.4655e-01
+
+  Pauling Rule 2 (violation fraction):
+    Novel:      n= 2064, median=0.0000, mean=0.1725, std=0.3072
+    Comp known: n=  721, median=0.0000, mean=0.1704, std=0.3081
+    Mann-Whitney U: p=5.2143e-01, effect size r=-0.0138
+    KS test: D=0.0291, p=7.4193e-01
+
+  Shannon Radii (violation fraction):
+    Novel:      n= 2022, median=0.0000, mean=0.0064, std=0.0558
+    Comp known: n=  707, median=0.0000, mean=0.0017, std=0.0191
+    Mann-Whitney U: p=8.2307e-03, effect size r=-0.0214
+    KS test: D=0.0221, p=9.5397e-01
+
+  Charge Neutrality (total charge):
+    Novel:      n= 2066, median=0.0000, mean=-1.2507, std=2.8763
+    Comp known: n=  721, median=0.0000, mean=-1.0347, std=2.2958
+    Mann-Whitney U: p=1.2871e-01, effect size r=0.0338
+    KS test: D=0.0358, p=4.8706e-01
+
+  Space Group (experimental fraction):
+    Novel:      n= 1309, median=0.0000, mean=0.0297, std=0.1135
+    Comp known: n=  548, median=0.0000, mean=0.0303, std=0.1040
+    Mann-Whitney U: p=6.4877e-01, effect size r=0.0071
+    KS test: D=0.0168, p=9.9983e-01
+
+
+## By Compound Class
+
+  GII:
+              pure_oxide: n= 2179, median=0.4221, mean=0.5054
+               oxyhalide: n=  153, median=0.4488, mean=0.5967
+         oxychalcogenide: n=  227, median=0.3459, mean=0.5508
+              oxynitride: n=   22, median=0.6089, mean=0.8127
+              oxyhydride: n=    7, median=0.2804, mean=0.3232
+
+  Pauling:
+              pure_oxide: n= 2272, median=0.0000, mean=0.1401
+               oxyhalide: n=  199, median=0.0000, mean=0.3007
+         oxychalcogenide: n=  277, median=0.1667, mean=0.3458
+              oxynitride: n=   27, median=0.0000, mean=0.0988
+              oxyhydride: n=   10, median=0.0000, mean=0.2286
+
+
+## By Oxidation State Confidence
+
+  GII:
+              both_agree: n= 1071, median=0.3952, mean=0.4494
+           single_method: n= 1208, median=0.4357, mean=0.5481
+        methods_disagree: n=  309, median=0.5255, mean=0.6291
+
+  Pauling:
+              both_agree: n= 1071, median=0.0000, mean=0.1340
+           single_method: n= 1405, median=0.0000, mean=0.1986
+        methods_disagree: n=  309, median=0.0000, mean=0.1826
+
+
+## Mixed Valence Effect on BVS
+
+  Mixed valence:     n=  449, median=0.4626
+  Not mixed valence: n= 2139, median=0.4131
+  Mann-Whitney U: p=2.9044e-05
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+- BVS/GII: No significant difference between novel and computationally known (p=2.41e-01)
+
+- Pauling: No significant difference between novel and computationally known (p=5.21e-01)
