@@ -332,3 +332,23 @@ def get_statistics(conn) -> dict:
         "mp_synth_status": {r["synth_status"]: r["cnt"] for r in mp_counts if r["synth_status"]},
         "compound_classes": {r["compound_class"]: r["cnt"] for r in compound_counts},
     }
+
+
+def get_flagged_materials(conn, min_failures: int = 2, limit: int = 10) -> list[dict]:
+    """Get materials with the most validation concerns (highest scores across checks)."""
+    rows = conn.execute("""
+        SELECT m.material_id, m.reduced_formula, m.compound_class,
+               COUNT(CASE WHEN vr.status = 'completed' THEN 1 END) AS n_checks,
+               AVG(CASE WHEN vr.check_name = 'bond_valence_sum' AND vr.status = 'completed' THEN vr.score END) AS gii,
+               AVG(CASE WHEN vr.check_name = 'pauling_rule2' AND vr.status = 'completed' THEN vr.score END) AS pauling_violations,
+               AVG(CASE WHEN vr.check_name = 'shannon_radii' AND vr.status = 'completed' THEN vr.score END) AS shannon_violations,
+               mc.synth_status
+        FROM materials m
+        LEFT JOIN validation_results vr ON m.material_id = vr.material_id
+        LEFT JOIN mp_cross_ref mc ON m.material_id = mc.material_id
+        GROUP BY m.material_id
+        HAVING n_checks >= ?
+        ORDER BY gii DESC NULLS LAST
+        LIMIT ?
+    """, (min_failures, limit)).fetchall()
+    return [dict(r) for r in rows]

@@ -18,7 +18,8 @@ class PaulingRule2Validator(BaseValidator):
     independence = "fully_independent"
 
     def validate(self, structure: Structure, material_info: dict,
-                 oxi_assignment: dict | None = None) -> ValidationResult:
+                 oxi_assignment: dict | None = None,
+                 nn_cache: dict | None = None) -> ValidationResult:
         if oxi_assignment is None or oxi_assignment["confidence"] == "no_assignment":
             return self._skip_no_params(
                 "No oxidation state assignment available",
@@ -34,11 +35,22 @@ class PaulingRule2Validator(BaseValidator):
         if not o_indices:
             return self._skip_not_applicable("No oxygen sites found in structure")
 
-        try:
+        # Use pre-computed neighbor cache or compute on the fly
+        if nn_cache is None:
             from pymatgen.analysis.local_env import CrystalNN
-            cnn = CrystalNN()
-        except Exception as e:
-            return self._error(f"CrystalNN initialization failed: {e}")
+            try:
+                cnn = CrystalNN()
+            except Exception as e:
+                return self._error(f"CrystalNN initialization failed: {e}")
+        else:
+            cnn = None
+
+        def _get_nn_info(site_idx):
+            if nn_cache is not None and site_idx in nn_cache:
+                return nn_cache[site_idx]
+            if cnn is not None:
+                return cnn.get_nn_info(structure, site_idx)
+            return None
 
         expected_valence = 2.0  # |valence of O²⁻|
         site_results = []
@@ -47,7 +59,9 @@ class PaulingRule2Validator(BaseValidator):
 
         for o_idx in o_indices:
             try:
-                nn_info = cnn.get_nn_info(structure, o_idx)
+                nn_info = _get_nn_info(o_idx)
+                if nn_info is None:
+                    continue
             except Exception:
                 continue
 
@@ -61,13 +75,17 @@ class PaulingRule2Validator(BaseValidator):
                 if oxi is None or oxi <= 0:
                     continue  # skip anions and unknown
 
-                # Get coordination number of this cation
+                # Get coordination number of this cation by ANIONS only
+                # (Pauling's rule defines CN as coordination by anions)
                 try:
                     nn_idx = nn["site_index"]
-                    cation_nn = cnn.get_nn_info(structure, nn_idx)
-                    cation_cn = len(cation_nn)
+                    cation_nn = _get_nn_info(nn_idx)
+                    cation_cn = sum(
+                        1 for n in cation_nn
+                        if oxi_states.get(str(n["site"].specie), 0) < 0
+                    )
                 except Exception:
-                    cation_cn = len(nn_info)  # fallback
+                    cation_cn = 0
 
                 if cation_cn > 0:
                     strength = oxi / cation_cn
@@ -109,22 +127,32 @@ class PaulingRule2Validator(BaseValidator):
         violation_fraction = n_violations / n_checked
         passed = violation_fraction <= 0.25  # ≤25% of O sites violate
 
+        details = {
+            "n_oxygen_sites_checked": n_checked,
+            "n_violations": n_violations,
+            "violation_fraction": round(violation_fraction, 4),
+            "tolerance": PAULING_R2_TOLERANCE,
+            "worst_sites": sorted(
+                [s for s in site_results if not s["passed"]],
+                key=lambda x: x["deviation"],
+                reverse=True,
+            )[:5],
+            "oxi_state_confidence": oxi_confidence,
+            "oxi_state_method": oxi_assignment.get("method_used"),
+        }
+
+        compound_class = material_info.get("compound_class", "pure_oxide")
+        if compound_class != "pure_oxide":
+            details["compound_class_warning"] = (
+                f"This {compound_class} contains non-oxide anions. "
+                "Only O²⁻ sites are checked (expected valence sum = 2). "
+                "Non-oxide anion sites are not evaluated."
+            )
+
         return self._make_result(
             status="completed",
             passed=passed,
             confidence=confidence_score,
             score=round(violation_fraction, 4),
-            details={
-                "n_oxygen_sites_checked": n_checked,
-                "n_violations": n_violations,
-                "violation_fraction": round(violation_fraction, 4),
-                "tolerance": PAULING_R2_TOLERANCE,
-                "worst_sites": sorted(
-                    [s for s in site_results if not s["passed"]],
-                    key=lambda x: x["deviation"],
-                    reverse=True,
-                )[:5],
-                "oxi_state_confidence": oxi_confidence,
-                "oxi_state_method": oxi_assignment.get("method_used"),
-            },
+            details=details,
         )

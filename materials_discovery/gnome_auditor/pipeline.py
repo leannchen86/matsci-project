@@ -8,6 +8,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from pymatgen.core import Structure
+from pymatgen.analysis.local_env import CrystalNN
 from tqdm import tqdm
 
 from gnome_auditor.config import EXTRACTED_CIFS_DIR
@@ -90,8 +91,26 @@ def validate_material(material_id: str, conn=None, force: bool = False) -> dict:
     else:
         oxi_dict = oxi_db
 
-    # Step 2: Run all validators
+    # Step 2: Pre-compute CrystalNN neighbor info (shared by Shannon + Pauling)
+    nn_cache = None
     validators = _get_validators(conn=conn)
+    needs_nn = any(
+        not force and not has_validation_result(conn, material_id, v.check_name)
+        for v in validators if v.check_name in ("shannon_radii", "pauling_rule2")
+    )
+    if force or needs_nn:
+        try:
+            cnn = CrystalNN()
+            nn_cache = {}
+            for i in range(len(structure)):
+                try:
+                    nn_cache[i] = cnn.get_nn_info(structure, i)
+                except Exception:
+                    pass  # individual site failures are handled by validators
+        except Exception:
+            nn_cache = None  # validators will fall back to computing their own
+
+    # Step 3: Run all validators
     results = []
 
     for validator in validators:
@@ -102,7 +121,7 @@ def validate_material(material_id: str, conn=None, force: bool = False) -> dict:
             continue
 
         try:
-            result = validator.validate(structure, mat, oxi_dict)
+            result = validator.validate(structure, mat, oxi_dict, nn_cache=nn_cache)
         except Exception as e:
             result = validator._error(str(e))
 

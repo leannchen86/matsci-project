@@ -43,7 +43,8 @@ class GoldschmidtValidator(BaseValidator):
     independence = "fully_independent"
 
     def validate(self, structure: Structure, material_info: dict,
-                 oxi_assignment: dict | None = None) -> ValidationResult:
+                 oxi_assignment: dict | None = None,
+                 nn_cache: dict | None = None) -> ValidationResult:
         # Only applicable to ABO3 perovskites
         oxide_type = material_info.get("oxide_type")
         if oxide_type != "ABO3":

@@ -36,7 +36,9 @@ SYSTEM_PROMPT = """You are a materials science research assistant analyzing the 
 
 2. **Always show raw numbers — you interpret, the human decides:**
    - Report exact scores, counts, and fractions
-   - Never reduce results to just pass/fail without the underlying data
+   - NEVER lead with pass/fail. Present the continuous metric in context first:
+     "GII of 0.52 v.u. (ICSD experimental baseline: 0.2 v.u.)" NOT "BVS check: FAILED"
+   - The `passed` field in the database is a legacy binary threshold — ignore it in favor of the continuous `score`
 
 3. **Always report coverage:**
    - "Charge neutrality: X of Y materials could be checked (Z%), of which W failed (V%)"
@@ -56,9 +58,16 @@ SYSTEM_PROMPT = """You are a materials science research assistant analyzing the 
    - novel = not found in MP at all
    - structural_mismatch = composition matches but space group differs
 
-7. **Explain what flags mean physically:**
-   - Don't just say "GII = 0.35" — explain "The Global Instability Index of 0.35 v.u. exceeds the threshold of 0.2, suggesting significant strain in the bond network"
+7. **Explain what scores mean physically — always provide reference baselines:**
+   - BVS: "GII of 0.52 v.u. — for context, well-refined ICSD experimental structures average ~0.2 v.u., so this DFT-relaxed geometry shows moderate bond strain"
+   - Shannon: "violation fraction of 0.15 — 15% of bonds deviate >25% from expected Shannon radii distances"
+   - Pauling: "violation fraction of 0.20 — 20% of oxygen sites have electrostatic valence sums deviating >25% from the expected value of 2"
+   - Charge neutrality: "residual charge of -2.0 — likely reflects the oxidation state assignment rather than true charge imbalance"
    - Connect results to chemistry: "Shannon radii violation on the Fe-O bond suggests the Fe-O distance (2.45 Å) is 30% longer than expected for Fe³⁺ in octahedral coordination (1.89 Å)"
+
+8. **Flag compound class limitations:**
+   - When a material's compound_class is not "pure_oxide" (e.g., oxyhalide, oxychalcogenide), note that validators assuming O²⁻ may not fully apply
+   - 18% of the dataset are mixed-anion compounds
 
 ## Oxide Type Classification
 Materials are classified by reduced formula ratios: ABO3 (perovskites), AB2O4 (spinels), A2BO4 (Ruddlesden-Popper), etc.
@@ -88,7 +97,7 @@ TOOLS = [
     },
     {
         "name": "get_validation_results",
-        "description": "Get all validation check results for a specific material. Returns tier, independence, status, pass/fail, confidence, scores, and detailed data for each check.",
+        "description": "Get all validation check results for a specific material. Returns tier, independence, status, continuous scores, confidence, and detailed metric data for each check. Focus on the 'score' field (continuous metric) rather than 'passed' (legacy binary threshold).",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -124,7 +133,7 @@ TOOLS = [
                 },
                 "check_passed": {
                     "type": "boolean",
-                    "description": "Filter by whether the check passed (true) or failed (false). Requires check_name.",
+                    "description": "Filter by legacy pass/fail threshold (true/false). Requires check_name. Note: prefer filtering by score ranges for more nuanced analysis.",
                 },
                 "mp_match_type": {
                     "type": "string",
@@ -326,7 +335,7 @@ def run_chat():
         # Chat loop with tool use
         while True:
             response = client.messages.create(
-                model="claude-opus-4-6-20250219",
+                model="claude-sonnet-4-5-20250929",
                 max_tokens=4096,
                 system=SYSTEM_PROMPT,
                 tools=TOOLS,

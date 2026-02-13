@@ -37,7 +37,8 @@ class BondValenceSumValidator(BaseValidator):
     independence = "semi_independent"
 
     def validate(self, structure: Structure, material_info: dict,
-                 oxi_assignment: dict | None = None) -> ValidationResult:
+                 oxi_assignment: dict | None = None,
+                 nn_cache: dict | None = None) -> ValidationResult:
         if oxi_assignment is None or oxi_assignment["confidence"] == "no_assignment":
             return self._skip_no_params(
                 "No oxidation state assignment available",

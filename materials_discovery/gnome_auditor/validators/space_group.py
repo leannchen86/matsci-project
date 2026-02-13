@@ -22,7 +22,8 @@ class SpaceGroupValidator(BaseValidator):
         self._conn = conn
 
     def validate(self, structure: Structure, material_info: dict,
-                 oxi_assignment: dict | None = None) -> ValidationResult:
+                 oxi_assignment: dict | None = None,
+                 nn_cache: dict | None = None) -> ValidationResult:
         sg_number = material_info.get("space_group_number")
         if sg_number is None:
             return self._skip_no_params("No space group number available")

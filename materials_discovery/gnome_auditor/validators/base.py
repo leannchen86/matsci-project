@@ -58,13 +58,17 @@ class BaseValidator(ABC):
 
     @abstractmethod
     def validate(self, structure, material_info: dict,
-                 oxi_assignment: dict | None = None) -> ValidationResult:
+                 oxi_assignment: dict | None = None,
+                 nn_cache: dict | None = None) -> ValidationResult:
         """Run the validation check.
 
         Args:
             structure: pymatgen Structure object (from CIF)
             material_info: dict from materials table
             oxi_assignment: dict from oxidation_state_assignments table (may be None)
+            nn_cache: optional pre-computed CrystalNN neighbor info per site index
+                      {site_idx: [nn_info_list]} — shared across validators to
+                      avoid redundant Voronoi decomposition
 
         Returns:
             ValidationResult
