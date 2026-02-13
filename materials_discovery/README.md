@@ -2,6 +2,7 @@
 
 [**Dataset**](#dataset)
 | [**Models**](#models)
+| [**GNoME Auditor**](#gnome-auditor)
 | [**Colabs**](#colabs)
 | [**License**](#license)
 | [**Disclaimer**](#disclaimer)
@@ -59,6 +60,52 @@ colab.
 calculations. The paper also reports metrics for binaries and tenaries with
 the r²SCAN functional. A summary of calculated energies and associated
 metrics is included for these calculations.
+
+### GNoME Auditor
+
+The `gnome_auditor/` package provides a chemistry-based validation pipeline for auditing GNoME crystal predictions. It applies classical inorganic chemistry rules that are **independent of the DFT/ML training pipeline** to assess chemical plausibility.
+
+#### Motivation
+
+GNoME predicts materials using graph neural networks trained on DFT data. An independent audit using textbook chemistry rules (charge neutrality, Shannon radii, Pauling's rules, bond valence analysis) can flag predictions that violate well-established chemical principles — without circular dependence on the same DFT methods used for training.
+
+#### Pipeline
+
+1. **Data Ingestion** — Filters GNoME's ~520k materials to 3,262 ternary oxygen-containing compounds, extracts CIF structures, classifies by compound type (pure oxide, oxyhalide, oxychalcogenide, oxynitride, oxyhydride)
+2. **Oxidation State Assignment** — Multi-method consensus using pymatgen's BVAnalyzer (structure-aware) and Composition.oxi_state_guesses (composition-only), with mixed-valence detection
+3. **Six Validators:**
+
+| Validator | Rule | Tier | Notes |
+|-----------|------|------|-------|
+| Charge Neutrality | Sum of oxidation states × counts = 0 | 1 (DFT-independent) | Reflects oxi-state assignment quality |
+| Shannon Radii | Bond lengths ≈ sum of Shannon ionic radii ± 25% | 1 | Very lenient — 99% pass |
+| Pauling Rule 2 | Electrostatic valence sum around O sites ≈ 2 | 1 | 78% pass |
+| Goldschmidt | Tolerance factor for perovskites in [0.71, 1.05] | 1 | Only applies to ABO3 (2 in dataset) |
+| Bond Valence Sum | Global Instability Index (GII) | 2 (uses DFT geometry) | Median GII 0.52 v.u. vs ICSD baseline 0.2 |
+| Space Group | Space group occurrence in experimental databases | 2 | 89.7% have novel space groups |
+
+4. **Materials Project Cross-Reference** — Checks each material against MP for novelty, using expert-curated ICSD synthesizability data (52,689 synthesized + 147,843 not-synthesized entries)
+
+#### Key Results
+
+- **74.3% truly novel** — no composition match in Materials Project
+- **25.6% computationally known** — in MP but never experimentally synthesized
+- **0.03% experimentally verified** — only 1 material (Sc₃InO)
+- **18% are mixed-anion compounds** (not pure oxides) — the O²⁻ assumption in several validators may not hold for these
+- BVS "failure" rates primarily reflect the expected geometry offset between DFT-relaxed P1 structures and ICSD experimental structures, not chemical implausibility
+
+#### Usage
+
+```bash
+cd materials_discovery
+source .venv/bin/activate
+
+python -m gnome_auditor.cli stats        # View current results
+python -m gnome_auditor.cli ingest       # Load data into SQLite
+python -m gnome_auditor.cli validate     # Run all validators
+python -m gnome_auditor.cli cross-ref    # MP cross-referencing (needs MP_API_KEY)
+python -m gnome_auditor.cli chat         # Claude research interface (needs ANTHROPIC_API_KEY)
+```
 
 ### Models
 
