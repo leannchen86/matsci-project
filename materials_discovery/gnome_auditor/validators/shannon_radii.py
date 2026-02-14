@@ -103,35 +103,22 @@ SHANNON_RADII = {
 }
 
 
-def _get_shannon_radius(element: str, oxi_state: int, coord_number: int) -> tuple[float | None, str]:
-    """Look up Shannon radius, trying exact CN then nearest CN, then pymatgen fallback.
-
-    Returns (radius, source) where source is 'table_exact', 'table_nearest_cn',
-    'pymatgen', or 'missing'.
-    """
-    # Try exact match from hand-curated table
+def _get_shannon_radius(element: str, oxi_state: int, coord_number: int) -> float | None:
+    """Look up Shannon radius, trying exact CN then nearest CN."""
+    # Try exact match
     key = (element, oxi_state, coord_number)
     if key in SHANNON_RADII:
-        return SHANNON_RADII[key], "table_exact"
+        return SHANNON_RADII[key]
 
-    # Try nearby coordination numbers from hand-curated table
+    # Try nearby coordination numbers
     available = {cn: r for (el, ox, cn), r in SHANNON_RADII.items()
                  if el == element and ox == oxi_state}
-    if available:
-        nearest_cn = min(available.keys(), key=lambda cn: abs(cn - coord_number))
-        return available[nearest_cn], "table_nearest_cn"
+    if not available:
+        return None
 
-    # Fallback to pymatgen's Species.ionic_radius
-    try:
-        from pymatgen.core import Species
-        sp = Species(element, oxi_state)
-        r = sp.ionic_radius
-        if r is not None and r > 0:
-            return float(r), "pymatgen"
-    except Exception:
-        pass
-
-    return None, "missing"
+    # Use the nearest available CN
+    nearest_cn = min(available.keys(), key=lambda cn: abs(cn - coord_number))
+    return available[nearest_cn]
 
 
 class ShannonRadiiValidator(BaseValidator):
@@ -140,9 +127,8 @@ class ShannonRadiiValidator(BaseValidator):
     independence = "fully_independent"
 
     def validate(self, structure: Structure, material_info: dict,
-                 oxi_assignment: dict | None = None,
-                 nn_cache: dict | None = None) -> ValidationResult:
-        if oxi_assignment is None or oxi_assignment["confidence"] == "no_assignment":
+                 oxi_assignment: dict | None = None) -> ValidationResult:
+        if oxi_assignment is None or oxi_assignment["confidence"] == "none":
             return self._skip_no_params(
                 "No oxidation state assignment available",
                 details={"oxi_state_confidence": "none"},
@@ -152,28 +138,17 @@ class ShannonRadiiValidator(BaseValidator):
         oxi_confidence = oxi_assignment["confidence"]
         confidence_score = OXI_CONFIDENCE_MAP.get(oxi_confidence, 0.0)
 
-        # Use pre-computed neighbor cache or compute on the fly
-        if nn_cache is None:
+        # Get nearest neighbors for each site
+        try:
             from pymatgen.analysis.local_env import CrystalNN
-            try:
-                cnn = CrystalNN()
-            except Exception as e:
-                return self._error(f"CrystalNN initialization failed: {e}")
-        else:
-            cnn = None
+            cnn = CrystalNN()
+        except Exception as e:
+            return self._error(f"CrystalNN initialization failed: {e}")
 
         bond_checks = []
         n_checked = 0
         n_violations = 0
         missing_params = []
-        n_pymatgen_fallback = 0
-
-        def _get_nn_info(site_idx):
-            if nn_cache is not None and site_idx in nn_cache:
-                return nn_cache[site_idx]
-            if cnn is not None:
-                return cnn.get_nn_info(structure, site_idx)
-            return None
 
         for i, site in enumerate(structure):
             el_i = str(site.specie)
@@ -183,20 +158,16 @@ class ShannonRadiiValidator(BaseValidator):
                 continue
 
             try:
-                nn_info = _get_nn_info(i)
-                if nn_info is None:
-                    continue
+                nn_info = cnn.get_nn_info(structure, i)
             except Exception:
                 continue
 
             coord_number = len(nn_info)
 
-            r_i, src_i = _get_shannon_radius(el_i, int(oxi_i), coord_number)
+            r_i = _get_shannon_radius(el_i, int(oxi_i), coord_number)
             if r_i is None:
                 missing_params.append(f"{el_i}({oxi_i}+,CN={coord_number})")
                 continue
-            if src_i == "pymatgen":
-                n_pymatgen_fallback += 1
 
             for nn in nn_info:
                 nn_site = nn["site"]
@@ -205,16 +176,10 @@ class ShannonRadiiValidator(BaseValidator):
                 if oxi_j is None:
                     continue
 
-                try:
-                    nn_nn_info = _get_nn_info(nn["site_index"])
-                    nn_coord = len(nn_nn_info) if nn_nn_info else coord_number
-                except Exception:
-                    nn_coord = coord_number  # fallback to central atom's CN
-                r_j, src_j = _get_shannon_radius(el_j, int(oxi_j), nn_coord)
+                nn_coord = len(nn_info)  # approximate
+                r_j = _get_shannon_radius(el_j, int(oxi_j), nn_coord)
                 if r_j is None:
                     continue
-                if src_j == "pymatgen":
-                    n_pymatgen_fallback += 1
 
                 expected_dist = r_i + r_j
                 actual_dist = site.distance(nn_site)
@@ -254,29 +219,18 @@ class ShannonRadiiValidator(BaseValidator):
         violation_fraction = n_violations / n_checked
         passed = violation_fraction <= 0.2  # ≤20% of bonds violate threshold
 
-        details = {
-            "n_bonds_checked": n_checked,
-            "n_violations": n_violations,
-            "violation_fraction": round(violation_fraction, 4),
-            "tolerance": SHANNON_TOLERANCE,
-            "n_pymatgen_fallback": n_pymatgen_fallback,
-            "worst_violations": bond_checks[:10],
-            "oxi_state_confidence": oxi_confidence,
-            "oxi_state_method": oxi_assignment.get("method_used"),
-        }
-
-        compound_class = material_info.get("compound_class", "pure_oxide")
-        if compound_class != "pure_oxide":
-            details["compound_class_warning"] = (
-                f"This {compound_class} contains non-oxide anions. "
-                "Shannon radii for non-O²⁻ anion bonds may use different "
-                "reference values than assumed here."
-            )
-
         return self._make_result(
             status="completed",
             passed=passed,
             confidence=confidence_score,
             score=round(violation_fraction, 4),
-            details=details,
+            details={
+                "n_bonds_checked": n_checked,
+                "n_violations": n_violations,
+                "violation_fraction": round(violation_fraction, 4),
+                "tolerance": SHANNON_TOLERANCE,
+                "worst_violations": bond_checks[:10],
+                "oxi_state_confidence": oxi_confidence,
+                "oxi_state_method": oxi_assignment.get("method_used"),
+            },
         )
