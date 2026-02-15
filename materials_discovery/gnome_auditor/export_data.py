@@ -84,18 +84,18 @@ def find_interesting_failures(materials):
     """Algorithmically select materials with interesting validation profiles."""
     categories = {
         "tier_conflict": {
-            "label": "Textbook says yes, geometry says no",
-            "description": "All Tier 1 (DFT-independent) checks pass, but Tier 2 (BVS) shows extreme geometric strain",
+            "label": "Chemically valid, geometrically unstable",
+            "description": "All Tier 1 (DFT-independent) checks pass, but Tier 2 (BVS) shows high geometric instability",
             "items": [],
         },
         "suspiciously_perfect": {
-            "label": "Suspiciously perfect — someone please synthesize this",
-            "description": "Novel material that aces every check with near-ideal scores",
+            "label": "All checks pass, novel prediction",
+            "description": "Novel material with near-ideal scores across all validators",
             "items": [],
         },
         "identity_crisis": {
-            "label": "Identity crisis: the validators can't agree",
-            "description": "Oxidation state methods disagree, causing downstream chaos",
+            "label": "Oxidation state disagreement",
+            "description": "Oxidation state methods disagree, causing inconsistent downstream results",
             "items": [],
         },
         "geometric_strain": {

@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StackOverBond</title>
+<title>TBD</title>
 <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
 <style>
 /* ============================================================
-   StackOverBond — SO-inspired theme
+   TBD — SO-inspired theme
    ============================================================ */
 :root {
   --so-orange: #F48024;
@@ -97,7 +97,7 @@ body {
 }
 .header-search input {
   width: 100%;
-  padding: 6px 10px 6px 32px;
+  padding: 6px 10px;
   border: 1px solid #555;
   border-radius: 3px;
   background: #3b4045;
@@ -189,18 +189,32 @@ body {
 }
 .confidence-bar {
   width: 100%;
-  height: 8px;
+  height: 16px;
   border-radius: 4px;
   display: flex;
   overflow: hidden;
   background: var(--check-skip);
+  gap: 1px;
 }
 .confidence-bar .seg {
   height: 100%;
-  transition: opacity .2s;
   position: relative;
+  cursor: help;
 }
 .confidence-bar .seg:hover { opacity: 0.8; }
+.bar-tooltip {
+  position: fixed;
+  background: var(--so-dark);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  display: none;
+}
 .confidence-bar .seg.good { background: var(--check-good); }
 .confidence-bar .seg.warn { background: var(--check-warn); }
 .confidence-bar .seg.bad { background: var(--check-bad); }
@@ -247,6 +261,20 @@ body {
   font-size: 12px;
   white-space: nowrap;
 }
+.match-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  margin-left: 4px;
+  letter-spacing: 0.3px;
+}
+.match-pill.novel { background: #155724; color: #fff; }
+.match-pill.comp-known { background: #856404; color: #fff; }
+.match-pill.exp-known { background: #0c5460; color: #fff; }
+
 .tag.novel { background: #d4edda; color: #155724; }
 .tag.comp-known { background: #fff3cd; color: #856404; }
 .tag.exp-known { background: #d1ecf1; color: #0c5460; }
@@ -287,19 +315,19 @@ body {
 .check-answer-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   padding: 10px 14px;
   background: #f8f9f9;
   border-bottom: 1px solid var(--so-border);
 }
 .check-answer-header .check-icon {
-  width: 32px;
-  height: 32px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 700;
   color: #fff;
   flex-shrink: 0;
@@ -336,17 +364,40 @@ body {
   font-size: 15px;
   margin-bottom: 6px;
 }
-.check-answer-body .assumption {
-  background: var(--so-yellow-bg);
-  border-left: 3px solid var(--so-gold);
-  padding: 8px 12px;
-  font-size: 12px;
-  color: var(--so-text-light);
-  margin-top: 8px;
-  border-radius: 0 3px 3px 0;
+.check-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
-.check-answer-body .assumption strong {
-  color: var(--so-text);
+.assumption-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--so-border);
+  color: var(--so-text-light);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  flex-shrink: 0;
+}
+.assumption-tip .tip-text {
+  display: none;
+  position: fixed;
+  background: var(--so-dark);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  width: 320px;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  pointer-events: none;
 }
 .check-answer-body .detail-row {
   font-size: 12px;
@@ -617,61 +668,7 @@ body {
 .mb-8 { margin-bottom: 8px; }
 sub { font-size: 0.75em; }
 
-/* ---- Opus Lens toggle ---- */
-.opus-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: 16px;
-  cursor: pointer;
-  user-select: none;
-}
-.opus-toggle .toggle-label {
-  color: #848d95;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: color .2s;
-}
-.opus-toggle.active .toggle-label {
-  color: var(--so-orange);
-}
-.opus-toggle .toggle-track {
-  width: 36px;
-  height: 20px;
-  border-radius: 10px;
-  background: #555;
-  position: relative;
-  transition: background .2s;
-}
-.opus-toggle.active .toggle-track {
-  background: var(--so-orange);
-}
-.opus-toggle .toggle-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: transform .2s;
-}
-.opus-toggle.active .toggle-thumb {
-  transform: translateX(16px);
-}
-
 /* ---- Opus question cards ---- */
-.opus-questions-section {
-  overflow: hidden;
-  transition: max-height .35s ease, opacity .25s ease;
-  max-height: 0;
-  opacity: 0;
-}
-.opus-questions-section.visible {
-  max-height: 2000px;
-  opacity: 1;
-}
 .opus-question-card {
   background: #FFF8F0;
   border: 1px solid #f0dcc0;
@@ -714,14 +711,6 @@ sub { font-size: 0.75em; }
   border-radius: 4px;
   padding: 16px;
   margin-bottom: 16px;
-  overflow: hidden;
-  transition: max-height .35s ease, opacity .25s ease;
-  max-height: 0;
-  opacity: 0;
-}
-.opus-dashboard-widget.visible {
-  max-height: 2000px;
-  opacity: 1;
 }
 .opus-dashboard-widget h3 {
   font-size: 14px;
@@ -747,18 +736,110 @@ sub { font-size: 0.75em; }
   margin-top: 2px;
 }
 
-/* Opus sidebar widget */
-.opus-sidebar-stats {
-  overflow: hidden;
-  transition: max-height .35s ease, opacity .25s ease;
-  max-height: 0;
-  opacity: 0;
+
+/* ---- MP Cross-Reference Card ---- */
+.mp-crossref {
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
 }
-.opus-sidebar-stats.visible {
-  max-height: 500px;
-  opacity: 1;
+.mp-crossref.exp-known {
+  background: var(--so-green-bg);
+  border: 2px solid var(--so-green);
+}
+.mp-crossref.comp-known {
+  background: var(--so-yellow-bg);
+  border: 2px solid #d4a017;
+}
+.mp-crossref.novel {
+  background: #e8f5e9;
+  border: 2px solid var(--check-good);
+  border-style: dashed;
+}
+.mp-crossref-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.mp-crossref-body {
+  flex: 1;
+  min-width: 0;
+}
+.mp-crossref-body .mp-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.mp-crossref-body .mp-detail {
+  font-size: 12px;
+  color: var(--so-text-light);
+  margin-bottom: 4px;
+}
+.mp-crossref-body a {
+  color: var(--so-link);
+  text-decoration: none;
+  font-size: 12px;
+}
+.mp-crossref-body a:hover { text-decoration: underline; }
+.synth-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.synth-badge.synth { background: var(--so-green); color: #fff; }
+.synth-badge.not-synth { background: #d4a017; color: #fff; }
+.synth-badge.pioneer { background: var(--check-good); color: #fff; }
+
+/* ---- Related Materials ---- */
+.related-materials {
+  margin-top: 4px;
+}
+.related-materials h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--so-text);
+  border-bottom: 1px solid var(--so-border);
+  padding-bottom: 4px;
+}
+.related-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background .1s;
+}
+.related-item:last-child { border-bottom: none; }
+.related-item:hover { background: #f8f9f9; }
+.related-item-formula {
+  font-size: 13px;
+  color: var(--so-link);
+  font-weight: 600;
+  min-width: 100px;
+}
+.related-item-formula:hover { color: #0a95ff; }
+.related-item-gii {
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 65px;
+  text-align: right;
+}
+.related-item-reason {
+  font-size: 11px;
+  color: var(--so-text-light);
+  flex: 1;
 }
 </style>
+<style id="route-style">.main-container{opacity:0}</style>
 </head>
 <body>
 
@@ -767,30 +848,20 @@ sub { font-size: 0.75em; }
      ============================================================ -->
 <header class="header">
   <a class="header-logo" onclick="showTab('dashboard')">
-    <span class="logo-icon">&#9883;</span>
-    <span class="logo-stack">Stack</span><span class="logo-over">Over</span><span class="logo-bond">Bond</span>
+    <span class="logo-icon"></span>
+    <span class="logo-stack">T</span><span class="logo-over">B</span><span class="logo-bond">D</span>
   </a>
 
   <nav class="header-nav">
-    <a onclick="showTab('dashboard')" data-tab="dashboard" class="active">Dashboard</a>
+    <a onclick="showTab('dashboard')" data-tab="dashboard">Dashboard</a>
     <a onclick="showTab('materials')" data-tab="materials">Materials</a>
     <a onclick="showTab('validators')" data-tab="validators">Validators</a>
   </nav>
 
   <div class="header-search">
-    <span class="search-icon">&#128269;</span>
     <input type="text" id="searchInput" placeholder="Search by formula, element, or ID..." onkeyup="handleSearch(event)">
   </div>
 
-  <div class="opus-toggle" id="opusToggle" onclick="toggleOpus()">
-    <span class="toggle-label">Opus Lens</span>
-    <div class="toggle-track"><div class="toggle-thumb"></div></div>
-  </div>
-
-  <div class="header-user">
-    <span>Logged in as <strong>GNoME</strong> &#129302;</span>
-    <span class="rep">1 rep</span>
-  </div>
 </header>
 
 <!-- ============================================================
@@ -802,15 +873,12 @@ sub { font-size: 0.75em; }
     <!-- ---- Dashboard tab ---- -->
     <div id="tab-dashboard" class="tab-content">
       <div class="hero-banner">
-        <h2>Welcome to <span class="accent">StackOverBond</span></h2>
+        <h2>Welcome to <span class="accent">TBD</span></h2>
         <div class="hero-sub">
-          Auditing 3,262 GNoME crystal predictions with classical chemistry rules &mdash;
-          independent of the DFT/ML training pipeline
+          Auditing 3,262 ternary oxygen-containing compounds from GNoME's ~380k stable predictions
+          with classical chemistry rules &mdash; independent of the DFT/ML training pipeline
         </div>
         <div id="hero-featured"></div>
-        <div class="hero-tagline">
-          "Stack Overflow took 15 years to make AI good enough to kill it. We're speedrunning." &mdash; est. 2025
-        </div>
       </div>
 
       <div class="opus-dashboard-widget" id="opus-dashboard"></div>
@@ -818,7 +886,7 @@ sub { font-size: 0.75em; }
       <div class="dashboard-grid">
         <div class="dashboard-card">
           <h3>Dataset Overview</h3>
-          <div id="stats-overview" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+          <div id="stats-overview" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"></div>
         </div>
         <div class="dashboard-card">
           <h3>Novelty Breakdown</h3>
@@ -841,12 +909,7 @@ sub { font-size: 0.75em; }
 
     <!-- ---- Materials tab ---- -->
     <div id="tab-materials" class="tab-content hidden">
-      <div class="content-header">
-        <div>
-          <h1>Materials</h1>
-          <div class="subtitle" id="materials-count"></div>
-        </div>
-      </div>
+      <div id="materials-count" style="font-size:14px;color:var(--so-text-light);margin-bottom:12px;"></div>
 
       <div class="filters-bar">
         <span class="filter-label">Filter:</span>
@@ -886,10 +949,6 @@ sub { font-size: 0.75em; }
 
     <!-- ---- Validators tab ---- -->
     <div id="tab-validators" class="tab-content hidden">
-      <div class="content-header">
-        <h1>Validators</h1>
-        <div class="subtitle">The independent checks applied to every material</div>
-      </div>
       <div id="validators-content"></div>
     </div>
   </div>
@@ -898,41 +957,24 @@ sub { font-size: 0.75em; }
   <aside class="sidebar">
     <div class="opus-sidebar-stats" id="opus-sidebar">
       <div class="sidebar-widget">
-        <div class="sidebar-widget-header" style="background:var(--so-orange);color:#fff;">Opus Lens Stats</div>
+        <div class="sidebar-widget-header" style="background:var(--so-orange);color:#fff;">Claude Question Stats</div>
         <div class="sidebar-widget-body" id="opus-sidebar-content"></div>
       </div>
     </div>
 
     <div class="sidebar-widget">
-      <div class="sidebar-widget-header">&#128293; Interesting Failures</div>
+      <div class="sidebar-widget-header">Interesting Failures</div>
       <div class="sidebar-widget-body" id="hot-questions"></div>
     </div>
 
-    <div class="sidebar-widget">
-      <div class="sidebar-widget-header">Dataset Stats</div>
-      <div class="sidebar-widget-body" id="sidebar-stats"></div>
-    </div>
-
-    <div class="sidebar-widget">
-      <div class="sidebar-widget-header">&#127942; Badges</div>
-      <div class="sidebar-widget-body" id="badges-widget" style="font-size:12px;"></div>
-    </div>
   </aside>
 </div>
 
 <!-- ============================================================
      FOOTER
      ============================================================ -->
-<footer class="footer">
-  <div class="footer-tagline">Building the dataset we wish AI already had&trade;</div>
-  <div>
-    <a href="#">StackOverBond</a> &middot;
-    Auditing <strong>3,262</strong> GNoME predictions with chemistry, not hype &middot;
-    Not affiliated with Stack Overflow (but spiritually indebted)
-  </div>
-</footer>
 
-<script src="data.js"></script>
+<script src="/data.js"></script>
 <script>
 /* ============================================================
    App State
@@ -946,7 +988,6 @@ let state = {
   expandedId: null,
   searchQuery: '',
   filters: { class: '', novelty: '', oxi: '' },
-  opusEnabled: false,
 };
 
 /* ============================================================
@@ -1026,25 +1067,31 @@ function assumptionText(checkName, details) {
   const oxiNote = `Oxi states: ${method} (confidence: ${oxi})`;
 
   if (checkName === 'bond_valence_sum') {
-    return `<strong>Assumption:</strong> BVS parameters calibrated on ICSD experimental structures applied to DFT-relaxed geometry. ${oxiNote}. GII &gt; 0.2 is expected for DFT geometries — this is a calibration offset, not necessarily a failure.`;
+    return `BVS parameters calibrated on ICSD experimental structures applied to DFT-relaxed geometry. ${oxiNote}. GII > 0.2 is expected for DFT geometries.`;
   }
   if (checkName === 'charge_neutrality') {
-    return `<strong>Assumption:</strong> O is always &minus;2. ${oxiNote}. Non-zero residuals usually reflect oxi-state assignment quality, not true charge imbalance.`;
+    return `O is always -2. ${oxiNote}. Non-zero residuals usually reflect oxi-state assignment quality, not true charge imbalance.`;
   }
   if (checkName === 'pauling_rule2') {
-    const warn = details?.compound_class_warning || '';
-    return `<strong>Assumption:</strong> Electrostatic valence sum around each O site should equal 2 (&plusmn;25%). ${oxiNote}.${warn ? ' <em>' + warn + '</em>' : ''}`;
+    return `Electrostatic valence sum around each O site should equal 2 (+-25%). ${oxiNote}.`;
   }
   if (checkName === 'shannon_radii') {
-    const warn = details?.compound_class_warning || '';
-    const fb = details?.n_pymatgen_fallback;
-    const fbNote = fb ? ` (${fb} bonds used pymatgen fallback radii)` : '';
-    return `<strong>Assumption:</strong> Bond lengths should match Shannon ionic radii sums &plusmn;25%. ${oxiNote}.${fbNote}${warn ? ' <em>' + warn + '</em>' : ''}`;
+    return `Bond lengths should match Shannon ionic radii sums +-25%. ${oxiNote}.`;
   }
   if (checkName === 'space_group') {
-    return `<strong>Assumption:</strong> Space groups observed in ICSD experimental entries for the same chemical system are more plausible. Novel space groups aren't wrong — just unprecedented.`;
+    return `Space groups observed in ICSD experimental entries for the same chemical system are more plausible. Novel space groups are not wrong, just unprecedented.`;
   }
   return '';
+}
+
+function segTip(checkName, score) {
+  const name = checkDisplayName(checkName);
+  if (checkName === 'bond_valence_sum') return `${name}: GII = ${score.toFixed(3)} v.u.`;
+  if (checkName === 'charge_neutrality') return score === 0 ? `${name}: neutral` : `${name}: residual ${score > 0 ? '+' : ''}${score}`;
+  if (checkName === 'pauling_rule2') return `${name}: ${(score * 100).toFixed(0)}% violation`;
+  if (checkName === 'shannon_radii') return `${name}: ${(score * 100).toFixed(0)}% violation`;
+  if (checkName === 'space_group') return score > 0 ? `${name}: ${(score * 100).toFixed(0)}% match` : `${name}: no experimental match`;
+  return `${name}: ${score}`;
 }
 
 function getGII(mat) {
@@ -1072,17 +1119,124 @@ function matchTypeLabel(mt) {
 }
 
 /* ============================================================
+   MP Cross-Reference Card
+   ============================================================ */
+function renderMPCrossRef(mat) {
+  const matchType = mat.match_type;
+  const mpId = mat.best_match_mp_id;
+  const mpUrl = mpId ? `https://next-gen.materialsproject.org/materials/${mpId}` : null;
+
+  if (matchType === 'experimentally_known') {
+    return `<div class="mp-crossref exp-known">
+      <div class="mp-crossref-icon" style="color:var(--so-green);font-size:22px;font-weight:700;">&#10003;</div>
+      <div class="mp-crossref-body">
+        <div class="mp-title">Experimentally Verified <span class="synth-badge synth">Synthesized</span></div>
+        <div class="mp-detail">This structure matches a material that has been experimentally synthesized and characterized.</div>
+        ${mpUrl ? `<a href="${mpUrl}" target="_blank" rel="noopener">${mpId} on Materials Project &#8594;</a>` : ''}
+      </div>
+    </div>`;
+  }
+
+  if (matchType === 'computationally_known') {
+    return `<div class="mp-crossref comp-known">
+      <div class="mp-crossref-icon" style="color:#d4a017;font-size:22px;font-weight:700;">~</div>
+      <div class="mp-crossref-body">
+        <div class="mp-title">Computationally Known <span class="synth-badge not-synth">Not yet synthesized</span></div>
+        <div class="mp-detail">This structure matches a Materials Project entry from DFT calculations, but has not been experimentally synthesized. GNoME may have independently rediscovered this prediction.</div>
+        ${mpUrl ? `<a href="${mpUrl}" target="_blank" rel="noopener">${mpId} on Materials Project &#8594;</a>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Novel — already shown as pill next to formula
+  return '';
+}
+
+/* ============================================================
+   Related Materials
+   ============================================================ */
+function findRelatedMaterials(mat) {
+  const targetElements = new Set(mat.elements || []);
+  const targetClass = mat.compound_class;
+  const targetCrystal = mat.crystal_system;
+  const targetGII = getGII(mat);
+  const results = [];
+
+  for (const m of DATA.materials) {
+    if (m.material_id === mat.material_id) continue;
+    let score = 0;
+    const reasons = [];
+
+    // Same element set (exact chemical system)
+    const mElements = new Set(m.elements || []);
+    if (mElements.size === targetElements.size && [...targetElements].every(e => mElements.has(e))) {
+      score += 3;
+      reasons.push('same elements');
+    }
+
+    // Same compound class + crystal system
+    if (m.compound_class === targetClass && m.crystal_system === targetCrystal) {
+      score += 2;
+      reasons.push(targetClass + ' + ' + targetCrystal);
+    }
+
+    // Similar GII (within ±0.1)
+    if (targetGII !== null) {
+      const mGII = getGII(m);
+      if (mGII !== null && Math.abs(mGII - targetGII) <= 0.1) {
+        score += 1;
+        reasons.push('similar GII');
+      }
+    }
+
+    if (score > 0) {
+      results.push({ material: m, score, reasons });
+    }
+  }
+
+  results.sort((a, b) => b.score - a.score);
+  return results.slice(0, 5);
+}
+
+function renderRelatedMaterials(mat) {
+  const related = findRelatedMaterials(mat);
+  if (!related.length) return '';
+
+  let items = '';
+  for (const r of related) {
+    const gii = getGII(r.material);
+    const giiStr = gii !== null ? gii.toFixed(2) : '?';
+    const giiColor = gii !== null ? (gii <= 0.2 ? 'text-good' : gii <= 0.6 ? 'text-warn' : 'text-bad') : 'text-muted';
+    items += `<div class="related-item" onclick="event.stopPropagation(); navigateToMaterial('${r.material.material_id}')">
+      <span class="related-item-formula">${formatFormula(r.material.reduced_formula)}</span>
+      <span class="tag ${matchTypeClass(r.material.match_type)}" style="font-size:10px;">${matchTypeLabel(r.material.match_type)}</span>
+      <span class="related-item-gii ${giiColor}">GII ${giiStr}</span>
+      <span class="related-item-reason">${r.reasons.join(' &middot; ')}</span>
+    </div>`;
+  }
+
+  return `<div class="related-materials detail-section">
+    <h3>Related Materials</h3>
+    ${items}
+  </div>`;
+}
+
+/* ============================================================
    Tab Navigation
    ============================================================ */
-function showTab(tab) {
+function showTab(tab, pushState) {
   state.tab = tab;
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
   document.getElementById('tab-' + tab).classList.remove('hidden');
   document.querySelectorAll('.header-nav a').forEach(a => {
     a.classList.toggle('active', a.dataset.tab === tab);
   });
+  document.querySelector('.sidebar').style.display = tab === 'dashboard' ? '' : 'none';
   if (tab === 'materials') renderMaterialsList();
   if (tab === 'validators') renderValidators();
+  if (pushState !== false) {
+    history.pushState(null, '', tab === 'dashboard' ? '/' : '/' + tab);
+  }
 }
 
 /* ============================================================
@@ -1152,12 +1306,13 @@ function renderMaterialsList() {
   const start = state.page * PAGE_SIZE;
   const page = mats.slice(start, start + PAGE_SIZE);
 
+  const allTotal = DATA.materials.length;
   document.getElementById('materials-count').textContent =
-    `${total.toLocaleString()} materials` + (state.searchQuery ? ` matching "${state.searchQuery}"` : '');
+    total === allTotal ? `Showing all ${allTotal.toLocaleString()} materials` : `Showing ${total.toLocaleString()} / ${allTotal.toLocaleString()} materials`;
 
   const checkOrder = ['charge_neutrality', 'shannon_radii', 'pauling_rule2', 'bond_valence_sum', 'space_group'];
 
-  let html = '';
+  let html = '<div style="display:flex;gap:16px;padding:4px 16px;font-size:11px;color:var(--so-text-light);font-weight:600;"><div style="width:108px;text-align:center;cursor:help;" data-tip="Global Instability Index — lower is better (experimental baseline ~0.2)">GII (v.u.)</div><div></div></div>';
   for (const mat of page) {
     const isExpanded = state.expandedId === mat.material_id;
     // Confidence bar segments
@@ -1168,7 +1323,8 @@ function renderMaterialsList() {
       const status = c?.status || 'skip';
       const color = c ? scoreColor(cn, c.score, status) : 'skip';
       if (status === 'completed') nCompleted++;
-      barSegs += `<div class="seg ${color}" style="flex:1" title="${checkDisplayName(cn)}: ${status === 'completed' ? c.score : 'skipped'}"></div>`;
+      const tipText = status === 'completed' ? segTip(cn, c.score) : checkDisplayName(cn) + ': skipped';
+      barSegs += `<div class="seg ${color}" style="flex:1" data-tip="${tipText}"></div>`;
     }
 
     // Overall color
@@ -1182,27 +1338,25 @@ function renderMaterialsList() {
       else overallClass = 'bad';
     }
 
-    // Tags
+    // Tags (structural properties only — match type is shown next to formula)
     let tags = '';
-    tags += tagHTML(matchTypeLabel(mat.match_type), matchTypeClass(mat.match_type));
     tags += tagHTML(mat.compound_class || '?');
     tags += tagHTML(mat.crystal_system || '?');
     if (mat.has_mixed_valence) tags += tagHTML('mixed-valence', 'mixed-valence');
     if (mat.oxi_confidence === 'methods_disagree') tags += tagHTML('oxi-conflict', 'oxi-low');
 
+    const matchPill = `<span class="match-pill ${matchTypeClass(mat.match_type)}">${matchTypeLabel(mat.match_type)}</span>`;
+
     html += `<div class="material-list-item ${isExpanded ? 'expanded' : ''}" onclick="toggleDetail('${mat.material_id}')">
       <div class="mat-confidence">
         <div class="confidence-score ${overallClass}">${overallLabel}</div>
-        <div class="confidence-label">GII (v.u.)</div>
         <div class="confidence-bar">${barSegs}</div>
-        <div class="confidence-label">${nCompleted}/5 checks</div>
       </div>
       <div class="mat-info">
-        <div class="mat-title">${formatFormula(mat.reduced_formula)}</div>
+        <div class="mat-title">${formatFormula(mat.reduced_formula)} ${matchPill}</div>
         <div class="mat-meta">
           ${mat.space_group || '?'} &middot; ${mat.n_sites || '?'} sites &middot;
-          ID: ${mat.material_id} &middot;
-          <span style="font-style:italic">Predicted by GNoME, audited 0.3s ago</span>
+          ID: ${mat.material_id}
         </div>
         <div class="mat-tags">${tags}</div>
       </div>
@@ -1235,7 +1389,7 @@ function renderDetailPanel(mat) {
     const tier = c.tier || '?';
     const color = scoreColor(cn, score, status);
     const tierClass = tier === 1 ? 'tier1' : 'tier2';
-    const tierLabel = tier === 1 ? 'Tier 1 — DFT-independent' : 'Tier 2 — semi-independent';
+    const tierLabel = tier === 1 ? 'DFT-independent' : 'DFT-dependent';
 
     let icon = '?';
     if (color === 'good') icon = '&#10003;';
@@ -1269,20 +1423,22 @@ function renderDetailPanel(mat) {
         bodyHtml += '</div>';
       }
 
-      const assumption = assumptionText(cn, det);
-      if (assumption) {
-        bodyHtml += `<div class="assumption">${assumption}</div>`;
-      }
     } else {
       const reason = det?.skip_reason || c.error_message || status;
       bodyHtml = `<div class="detail-row text-muted">Skipped: ${reason}</div>`;
     }
 
+    const assumption = assumptionText(cn, det);
+    const tipHtml = assumption ? `<span class="assumption-tip">?<span class="tip-text">${assumption}</span></span>` : '';
+
     answersHtml += `
     <div class="check-answer">
       <div class="check-answer-header">
         <div class="check-icon ${color}">${icon}</div>
-        <div class="check-name">${checkDisplayName(cn)}</div>
+        <div class="check-name-wrap">
+          <div class="check-name">${checkDisplayName(cn)}</div>
+          ${tipHtml}
+        </div>
         <div class="check-tier ${tierClass}">${tierLabel}</div>
       </div>
       <div class="check-answer-body">${bodyHtml}</div>
@@ -1309,12 +1465,13 @@ function renderDetailPanel(mat) {
 
   return `<div class="detail-panel open">
     ${opusHtml}
+    ${renderMPCrossRef(mat)}
     <div class="detail-section">
-      <h3>5 Answers &mdash; sorted by epistemic independence</h3>
+      <h3>Validation Checks</h3>
       <div style="font-size:12px;color:var(--so-text-light);margin-bottom:12px;">
-        Each answer is an independent validation check. Tier 1 checks use pre-DFT chemistry knowledge.
-        Tier 2 checks apply experimental parameters to DFT geometry.
-        <strong>Traceable assumptions, not just answers.</strong>
+        DFT-independent checks use only classical chemistry rules.
+        DFT-dependent checks apply experimental parameters to DFT-relaxed geometry.
+        <strong>Traceable assumptions for every result.</strong>
       </div>
       ${answersHtml}
     </div>
@@ -1325,8 +1482,8 @@ function renderDetailPanel(mat) {
       <div class="detail-row"><strong>Space group:</strong> ${mat.space_group} (#${mat.space_group_number}) &mdash; ${mat.crystal_system}</div>
       <div class="detail-row"><strong>Formation energy:</strong> ${mat.formation_energy_per_atom?.toFixed(3) || '?'} eV/atom</div>
       <div class="detail-row"><strong>Band gap:</strong> ${mat.bandgap?.toFixed(3) || '?'} eV</div>
-      <div class="detail-row"><strong>MP status:</strong> ${matchTypeLabel(mat.match_type)}${mat.best_match_mp_id ? ' (' + mat.best_match_mp_id + ')' : ''}</div>
     </div>
+    ${renderRelatedMaterials(mat)}
   </div>`;
 }
 
@@ -1373,11 +1530,14 @@ function renderDashboard() {
   const stats = DATA.stats;
 
   // Overview stats
+  const pureOxides = stats.compound_classes.pure_oxide || 0;
   const overviewHtml = `
     <div class="big-stat"><div class="num">${stats.total.toLocaleString()}</div><div class="label">Materials Audited</div></div>
-    <div class="big-stat"><div class="num">${stats.match_types.novel?.toLocaleString() || 0}</div><div class="label">Truly Novel</div></div>
-    <div class="big-stat"><div class="num">5</div><div class="label">Independent Checks</div></div>
-    <div class="big-stat"><div class="num">${Object.keys(stats.compound_classes).length}</div><div class="label">Compound Classes</div></div>
+    <div class="big-stat"><div class="num">${stats.match_types.novel?.toLocaleString() || 0}</div><div class="label">Novel</div></div>
+    <div class="big-stat"><div class="num">${stats.match_types.computationally_known?.toLocaleString() || 0}</div><div class="label">Comp. Known</div></div>
+    <div class="big-stat"><div class="num">${stats.match_types.experimentally_known?.toLocaleString() || 0}</div><div class="label">Exp. Verified</div></div>
+    <div class="big-stat"><div class="num">${pureOxides.toLocaleString()}</div><div class="label">Pure Oxides</div></div>
+    <div class="big-stat"><div class="num">${(stats.total - pureOxides).toLocaleString()}</div><div class="label">Mixed-Anion</div></div>
   `;
   document.getElementById('stats-overview').innerHTML = overviewHtml;
 
@@ -1505,14 +1665,14 @@ function renderHeroFailure() {
 
   document.getElementById('hero-featured').innerHTML = `
     <div style="font-size:12px;color:var(--so-orange);margin-bottom:6px;font-weight:600;">
-      &#128308; Featured Failure &mdash; "${tierConflict.label}"
+      Featured Failure &mdash; "${tierConflict.label}"
     </div>
     <div class="hero-material" onclick="navigateToMaterial('${mat.material_id}')">
       <div class="hero-formula">${formatFormula(mat.reduced_formula)}</div>
       <div class="hero-checks">
         ${checksHtml}
         <div style="font-size:11px;color:#848d95;margin-top:6px;">
-          All Tier 1 (DFT-independent) checks pass perfectly. But Tier 2 says the geometry is wildly off.
+          All DFT-independent checks pass, but DFT-dependent checks show high geometric instability.
           <strong>Click to see the full breakdown &rarr;</strong>
         </div>
       </div>
@@ -1521,12 +1681,12 @@ function renderHeroFailure() {
 }
 
 function navigateToMaterial(materialId) {
-  // Reset filters, find material, show it
   state.searchQuery = materialId;
   document.getElementById('searchInput').value = materialId;
   state.expandedId = materialId;
   state.page = 0;
-  showTab('materials');
+  showTab('materials', false);
+  history.pushState({ material: materialId }, '', '/materials/' + materialId);
 }
 
 /* ============================================================
@@ -1542,7 +1702,7 @@ function renderSidebar() {
     for (const item of cat.items.slice(0, 3)) {
       const giiStr = item.gii != null ? `GII: ${item.gii.toFixed(1)}` : '';
       hotHtml += `<div class="hot-item" onclick="navigateToMaterial('${item.material_id}')">
-        <span class="hot-icon">&#9883;</span>
+        <span class="hot-icon">&bull;</span>
         <div>
           <div>${formatFormula(item.reduced_formula)}</div>
           <div class="hot-label">${giiStr} ${item.match_type === 'novel' ? '&middot; Novel' : ''}</div>
@@ -1551,42 +1711,6 @@ function renderSidebar() {
     }
   }
   document.getElementById('hot-questions').innerHTML = hotHtml;
-
-  // Stats
-  const stats = DATA.stats;
-  let statsHtml = '';
-  const statItems = [
-    ['Total materials', stats.total],
-    ['Novel (no MP match)', stats.match_types.novel || 0],
-    ['Comp. known', stats.match_types.computationally_known || 0],
-    ['Exp. verified', stats.match_types.experimentally_known || 0],
-    ['Pure oxides', stats.compound_classes.pure_oxide || 0],
-    ['Mixed-anion', stats.total - (stats.compound_classes.pure_oxide || 0)],
-  ];
-  for (const [label, val] of statItems) {
-    statsHtml += `<div class="stat-row"><span>${label}</span><span class="stat-val">${val.toLocaleString()}</span></div>`;
-  }
-  document.getElementById('sidebar-stats').innerHTML = statsHtml;
-
-  // Badges (trolling)
-  document.getElementById('badges-widget').innerHTML = `
-    <div style="margin-bottom:6px;">
-      <span class="tag tier1">&#127942; Trusted Validator</span>
-      <span style="color:var(--so-text-light);">Tier 1 checks &mdash; fully independent of DFT</span>
-    </div>
-    <div style="margin-bottom:6px;">
-      <span class="tag tier2">&#129504; Peer Review</span>
-      <span style="color:var(--so-text-light);">Tier 2 checks &mdash; uses experimental params on DFT geometry</span>
-    </div>
-    <div style="margin-bottom:6px;">
-      <span class="tag novel">&#127793; Pioneer</span>
-      <span style="color:var(--so-text-light);">Material not found in Materials Project</span>
-    </div>
-    <div>
-      <span class="tag mixed-valence">&#9889; Shapeshifter</span>
-      <span style="color:var(--so-text-light);">Contains elements with multiple oxidation states</span>
-    </div>
-  `;
 }
 
 /* ============================================================
@@ -1599,35 +1723,35 @@ function renderValidators() {
       rule: 'Sum of (oxidation state x count) for all elements = 0',
       metric: 'Residual total charge (0 = perfectly neutral)',
       assumption: 'All O is O\u00B2\u207B. Other oxidation states from BVAnalyzer/oxi_state_guesses consensus.',
-      icon: '&#9889;',
+      icon: '1',
     },
     {
       name: 'shannon_radii', display: 'Shannon Radii', tier: 1,
       rule: 'Bond lengths should match sum of Shannon ionic radii within 25%',
       metric: 'Fraction of bonds violating the tolerance',
       assumption: 'Shannon ionic radii (1976) with pymatgen fallback. CrystalNN for neighbor detection.',
-      icon: '&#128207;',
+      icon: '2',
     },
     {
       name: 'pauling_rule2', display: "Pauling's 2nd Rule", tier: 1,
       rule: 'Electrostatic bond strength sum around each O site should equal |valence of O| = 2',
       metric: 'Fraction of O sites with >25% deviation from expected valence sum',
       assumption: 'Only O\u00B2\u207B sites checked. Cation CN counts anion neighbors only (Pauling\'s definition).',
-      icon: '&#9878;',
+      icon: '3',
     },
     {
       name: 'bond_valence_sum', display: 'Bond Valence Sum (GII)', tier: 2,
       rule: 'Global Instability Index: RMS deviation of site BVS from formal valence',
       metric: 'GII in valence units (v.u.) &mdash; ICSD experimental baseline ~0.2 v.u.',
       assumption: 'BVS parameters calibrated on ICSD experimental structures, applied to DFT-relaxed P1 geometry. Elevated GII is expected for DFT structures.',
-      icon: '&#9874;',
+      icon: '4',
     },
     {
       name: 'space_group', display: 'Space Group Plausibility', tier: 2,
       rule: 'Check if the predicted space group has been observed experimentally for this chemical system',
       metric: 'Fraction of experimental entries with this space group',
       assumption: 'ICSD entries for the same chemical system. Novel space groups aren\'t wrong \u2014 just unprecedented.',
-      icon: '&#128300;',
+      icon: '5',
     },
   ];
 
@@ -1635,7 +1759,7 @@ function renderValidators() {
   for (const cm of checkMeta) {
     const s = DATA.stats.check_stats[cm.name] || {};
     const tierClass = cm.tier === 1 ? 'tier1' : 'tier2';
-    const tierLabel = cm.tier === 1 ? 'Tier 1 \u2014 Fully DFT-independent' : 'Tier 2 \u2014 Semi-independent';
+    const tierLabel = cm.tier === 1 ? 'DFT-independent' : 'DFT-dependent';
     const coverage = s.n_completed || 0;
     const coveragePct = ((coverage / DATA.stats.total) * 100).toFixed(1);
 
@@ -1687,37 +1811,6 @@ function renderValidators() {
   }
 }
 
-/* ============================================================
-   Opus Lens
-   ============================================================ */
-function toggleOpus() {
-  state.opusEnabled = !state.opusEnabled;
-  document.getElementById('opusToggle').classList.toggle('active', state.opusEnabled);
-
-  // Toggle question sections in currently rendered detail panels
-  document.querySelectorAll('.opus-questions-section').forEach(el => {
-    el.classList.toggle('visible', state.opusEnabled);
-  });
-
-  // Toggle dashboard widget
-  const dashWidget = document.getElementById('opus-dashboard');
-  if (state.opusEnabled) {
-    renderOpusDashboardWidget();
-    dashWidget.classList.add('visible');
-  } else {
-    dashWidget.classList.remove('visible');
-  }
-
-  // Toggle sidebar widget
-  const sidebarWidget = document.getElementById('opus-sidebar');
-  if (state.opusEnabled) {
-    renderOpusSidebarWidget();
-    sidebarWidget.classList.add('visible');
-  } else {
-    sidebarWidget.classList.remove('visible');
-  }
-}
-
 function getOpusQuestions(materialId) {
   return DATA.opus_questions?.[materialId] || [];
 }
@@ -1727,19 +1820,14 @@ function renderOpusQuestionsHTML(materialId) {
   if (!questions.length) return '';
 
   const sorted = [...questions].sort((a, b) => (a.priority || 2) - (b.priority || 2));
-  let html = `<div class="opus-questions-section ${state.opusEnabled ? 'visible' : ''}">
+  let html = `<div class="opus-questions-section">
     <div class="detail-section">
-      <h3 style="color:var(--so-orange);">Questions This Data Is Asking</h3>
-      <div style="font-size:12px;color:var(--so-text-light);margin-bottom:12px;">
-        Generated by Claude Opus 4.6 from the validation profile. Not claims &mdash; research directions.
-      </div>`;
+      <h3 style="color:var(--so-orange);">Claude asks...</h3>`;
 
   for (const q of sorted) {
-    const priorityTag = q.priority === 1 ? ' priority-1' : '';
     html += `<div class="opus-question-card">
       <div style="margin-bottom:4px;">
-        <span class="opus-q-tag ${q.category}${priorityTag}">${q.category.replace('_', ' ')}</span>
-        ${q.priority === 1 ? '<span class="opus-q-tag anomaly priority-1">high priority</span>' : ''}
+        <span class="opus-q-tag ${q.category}">${q.category.replace('_', ' ')}</span>
       </div>
       <div class="opus-q-text">${q.question_text}</div>
       ${q.evidence ? `<div class="opus-q-evidence">${q.evidence}</div>` : ''}
@@ -1766,11 +1854,11 @@ function renderOpusDashboardWidget() {
 
   if (!top.length) {
     document.getElementById('opus-dashboard').innerHTML =
-      '<h3>Opus Lens</h3><div style="font-size:12px;color:var(--so-text-light);">No questions generated yet. Run: <code>python -m gnome_auditor.opus_questions</code></div>';
+      '<h3>Claude Questions</h3><div style="font-size:12px;color:var(--so-text-light);">No questions generated yet. Run: <code>python -m gnome_auditor.opus_questions</code></div>';
     return;
   }
 
-  let html = `<h3>Top Opus Questions</h3>`;
+  let html = `<h3>Top Claude Questions</h3>`;
   for (const q of top) {
     html += `<div class="opus-dashboard-item" onclick="navigateToMaterial('${q.material_id}')">
       <div>
@@ -1802,7 +1890,6 @@ function renderOpusSidebarWidget() {
   for (const [cat, count] of Object.entries(cats).sort((a, b) => b[1] - a[1])) {
     html += `<div class="stat-row"><span><span class="opus-q-tag ${cat}">${cat.replace('_', ' ')}</span></span><span class="stat-val">${count}</span></div>`;
   }
-  html += `<div style="font-size:10px;color:var(--so-text-light);margin-top:8px;">Model: Claude Opus 4.6</div>`;
   document.getElementById('opus-sidebar-content').innerHTML = html;
 }
 
@@ -1812,6 +1899,88 @@ function renderOpusSidebarWidget() {
 document.addEventListener('DOMContentLoaded', () => {
   renderDashboard();
   renderSidebar();
+  renderOpusDashboardWidget();
+  renderOpusSidebarWidget();
+
+  // Shared tooltip element
+  const tooltip = document.createElement('div');
+  tooltip.className = 'bar-tooltip';
+  document.body.appendChild(tooltip);
+
+  document.addEventListener('mouseenter', (e) => {
+    // Assumption tips
+    const tip = e.target.closest('.assumption-tip');
+    if (tip) {
+      const text = tip.querySelector('.tip-text');
+      if (!text) return;
+      const rect = tip.getBoundingClientRect();
+      text.style.left = (rect.right + 8) + 'px';
+      text.style.top = rect.top + 'px';
+      text.style.display = 'block';
+      return;
+    }
+    // Data-tip tooltips (bar segments, scores, etc.)
+    const tipped = e.target.closest('[data-tip]');
+    if (tipped) {
+      const rect = tipped.getBoundingClientRect();
+      tooltip.textContent = tipped.dataset.tip;
+      tooltip.style.display = 'block';
+      tooltip.style.left = rect.left + 'px';
+      tooltip.style.top = (rect.top - 30) + 'px';
+    }
+  }, true);
+  document.addEventListener('mouseleave', (e) => {
+    const tip = e.target.closest('.assumption-tip');
+    if (tip) {
+      const text = tip.querySelector('.tip-text');
+      if (text) text.style.display = 'none';
+      return;
+    }
+    if (e.target.closest('[data-tip]')) {
+      tooltip.style.display = 'none';
+    }
+  }, true);
+
+  // Routing: parse initial path, then reveal
+  handleRoute();
+  document.querySelector('.main-container').style.opacity = '1';
+  const rs = document.getElementById('route-style');
+  if (rs) rs.remove();
+});
+
+function handleRoute() {
+  const path = location.pathname;
+  const matMatch = path.match(/^\/materials\/(.+)$/);
+  if (matMatch) {
+    const id = decodeURIComponent(matMatch[1]);
+    state.searchQuery = id;
+    document.getElementById('searchInput').value = id;
+    state.expandedId = id;
+    state.page = 0;
+    showTab('materials', false);
+  } else if (path === '/materials') {
+    showTab('materials', false);
+  } else if (path === '/validators') {
+    showTab('validators', false);
+  } else {
+    showTab('dashboard', false);
+  }
+}
+
+window.addEventListener('popstate', (e) => {
+  // Restore material state if available
+  if (e.state?.material) {
+    state.searchQuery = e.state.material;
+    document.getElementById('searchInput').value = e.state.material;
+    state.expandedId = e.state.material;
+    state.page = 0;
+    showTab('materials', false);
+  } else {
+    state.searchQuery = '';
+    state.expandedId = null;
+    document.getElementById('searchInput').value = '';
+    handleRoute();
+  }
 });
 </script>
 </body>
