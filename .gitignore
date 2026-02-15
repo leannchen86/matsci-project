@@ -3,5 +3,7 @@ materials_discovery/data/gnome_data/*.zip
 materials_discovery/data/gnome_data/*.csv
 materials_discovery/data/auditor_db/
 materials_discovery/data/extracted_cifs/
+materials_discovery/interface/data.js
+materials_discovery/data/analysis_output/
 __pycache__/
 *.pyc
