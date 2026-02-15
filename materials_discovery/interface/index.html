@@ -96,7 +96,7 @@ body {
 }
 .header-search input {
   width: 100%;
-  padding: 6px 10px;
+  padding: 6px 30px 6px 10px;
   border: 1px solid #555;
   border-radius: 3px;
   background: #3b4045;
@@ -145,8 +145,9 @@ body {
 }
 .material-list-item:last-child { border-bottom: 1px solid var(--so-border); }
 .material-list-item:hover { background: #f8f9f9; }
-.material-list-item.expanded { background: var(--so-yellow-bg); border-left: 3px solid var(--so-orange); }
+.material-list-item.expanded { background: var(--so-yellow-bg); border-left: 3px solid var(--so-orange); position: sticky; top: 50px; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
 .material-list-item.expanded .mat-question { display: none; }
+.material-list-item.expanded .mat-question.restore { display: block; }
 
 /* Vote / Confidence anatomy column */
 .mat-confidence {
@@ -445,7 +446,7 @@ body {
   align-items: center;
 }
 .filters-bar select {
-  padding: 4px 8px;
+  padding: 4px 32px 4px 8px;
   border: 1px solid var(--so-border);
   border-radius: 3px;
   font-size: 12px;
@@ -459,6 +460,7 @@ body {
 }
 .sort-tabs {
   display: flex;
+  align-items: center;
   gap: 0;
   margin-left: auto;
 }
@@ -470,9 +472,9 @@ body {
   color: var(--so-text-light);
   cursor: pointer;
 }
-.sort-tabs button:first-child { border-radius: 3px 0 0 3px; }
-.sort-tabs button:last-child { border-radius: 0 3px 3px 0; }
-.sort-tabs button:not(:first-child) { border-left: none; }
+.sort-tabs button:first-of-type { border-radius: 3px 0 0 3px; }
+.sort-tabs button:last-of-type { border-radius: 0 3px 3px 0; }
+.sort-tabs button:not(:first-of-type) { border-left: none; }
 .sort-tabs button.active { background: #e3e6e8; color: var(--so-text); }
 
 /* ---- Dashboard ---- */
@@ -785,6 +787,7 @@ sub { font-size: 0.75em; }
 
   <div class="header-search">
     <input type="text" id="searchInput" placeholder="Search by formula, element, or ID..." onkeyup="handleSearch(event)">
+    <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#848d95" stroke-width="2.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
   </div>
 
 </header>
@@ -861,9 +864,10 @@ sub { font-size: 0.75em; }
         </select>
 
         <div class="sort-tabs">
+          <span class="filter-label" style="margin-right:6px;">Sort by:</span>
           <button class="active" onclick="setSort('gii-desc', this)">Worst GII</button>
           <button onclick="setSort('gii-asc', this)">Best GII</button>
-          <button onclick="setSort('formula', this)">Formula</button>
+          <button onclick="setSort('formula', this)">A-Z</button>
           <button onclick="setSort('checks', this)">Most checks</button>
         </div>
       </div>
@@ -1261,7 +1265,8 @@ function renderMaterialsList() {
 
     const matchPill = `<span class="match-pill ${matchTypeClass(mat.match_type)}">${matchTypeLabel(mat.match_type)}</span>`;
 
-    html += `<div class="material-list-item ${isExpanded ? 'expanded' : ''}" onclick="toggleDetail('${mat.material_id}')">
+    html += `<div class="material-item-wrap">
+    <div class="material-list-item ${isExpanded ? 'expanded' : ''}" onclick="toggleDetail('${mat.material_id}')">
       <div class="mat-confidence">
         <div class="confidence-score ${overallClass}">${overallLabel}</div>
         <div class="confidence-bar">${barSegs}</div>
@@ -1269,7 +1274,7 @@ function renderMaterialsList() {
       <div class="mat-info">
         <div class="mat-title">${formatFormula(mat.reduced_formula)} ${matchPill}</div>
         <div class="mat-tags">${tags}</div>
-        ${(() => { const qs = getOpusQuestions(mat.material_id); return qs.length ? `<div class="mat-question"><span style="color:var(--so-orange);font-style:normal;font-weight:600;">Claude asks:</span> ${qs.sort((a,b) => (a.priority||2) - (b.priority||2))[0].question_text}</div>` : ''; })()}
+        ${(() => { const qs = getOpusQuestions(mat.material_id); return qs.length ? `<div class="mat-question" ${isExpanded ? 'id="row-claude-q"' : ''}><span style="color:var(--so-orange);font-style:normal;font-weight:600;">Claude asks:</span> ${qs.sort((a,b) => (a.priority||2) - (b.priority||2))[0].question_text}</div>` : ''; })()}
       </div>
     </div>`;
 
@@ -1277,10 +1282,21 @@ function renderMaterialsList() {
     if (isExpanded) {
       html += renderDetailPanel(mat);
     }
+    html += `</div>`;
   }
 
   document.getElementById('materials-list').innerHTML = html;
   renderPagination(total);
+
+  // Watch the claude question in detail panel — restore row question when it scrolls away
+  const detailQ = document.getElementById('detail-claude-q');
+  const rowQ = document.getElementById('row-claude-q');
+  if (detailQ && rowQ) {
+    const obs = new IntersectionObserver(([entry]) => {
+      rowQ.classList.toggle('restore', !entry.isIntersecting);
+    }, { rootMargin: '-120px 0px 0px 0px', threshold: 0 });
+    obs.observe(detailQ);
+  }
 }
 
 function renderDetailPanel(mat) {
@@ -1728,7 +1744,7 @@ function renderOpusQuestionsHTML(materialId) {
   // Pick the highest-priority question
   const q = [...questions].sort((a, b) => (a.priority || 2) - (b.priority || 2))[0];
 
-  return `<div class="claude-question">
+  return `<div class="claude-question" id="detail-claude-q">
     <span class="claude-question-label">Claude asks:</span> ${q.question_text}
   </div>`;
 }
