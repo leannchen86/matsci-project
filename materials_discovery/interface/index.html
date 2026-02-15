@@ -146,6 +146,7 @@ body {
 .material-list-item:last-child { border-bottom: 1px solid var(--so-border); }
 .material-list-item:hover { background: #f8f9f9; }
 .material-list-item.expanded { background: var(--so-yellow-bg); border-left: 3px solid var(--so-orange); }
+.material-list-item.expanded .mat-question { display: none; }
 
 /* Vote / Confidence anatomy column */
 .mat-confidence {
@@ -219,6 +220,15 @@ body {
   flex-wrap: wrap;
   gap: 4px;
 }
+.mat-question {
+  font-size: 12px;
+  color: var(--so-text-light);
+  margin-top: 6px;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .tag {
   display: inline-block;
   padding: 2px 6px;
@@ -274,14 +284,14 @@ body {
 .check-answer {
   border: 1px solid var(--so-border);
   border-radius: 4px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   overflow: hidden;
 }
 .check-answer-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 6px 12px;
   background: #f8f9f9;
   border-bottom: 1px solid var(--so-border);
 }
@@ -304,7 +314,7 @@ body {
 
 .check-answer-header .check-name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
 }
 .check-answer-header .check-tier {
   margin-left: auto;
@@ -323,11 +333,11 @@ body {
 }
 
 .check-answer-body {
-  padding: 12px 14px;
+  padding: 8px 12px;
 }
 .check-answer-body .score-line {
-  font-size: 15px;
-  margin-bottom: 6px;
+  font-size: 13px;
+  margin-bottom: 4px;
 }
 .check-name-wrap {
   display: flex;
@@ -610,40 +620,21 @@ body {
 .mb-8 { margin-bottom: 8px; }
 sub { font-size: 0.75em; }
 
-/* ---- Claude question cards ---- */
-.opus-question-card {
+/* ---- Claude question ---- */
+.claude-question {
   background: #FFF8F0;
   border: 1px solid #f0dcc0;
-  border-left: 4px solid var(--so-orange);
-  border-radius: 0 4px 4px 0;
-  padding: 10px 14px;
-  margin-bottom: 8px;
-}
-.opus-question-card .opus-q-text {
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
   font-size: 14px;
   color: var(--so-text);
-  margin-bottom: 4px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
-.opus-question-card .opus-q-evidence {
-  font-size: 12px;
-  color: var(--so-text-light);
-  font-style: italic;
-}
-.opus-q-tag {
-  display: inline-block;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-size: 10px;
+.claude-question-label {
   font-weight: 600;
-  margin-right: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: var(--so-orange);
 }
-.opus-q-tag.anomaly { background: #fce4e4; color: var(--so-red); }
-.opus-q-tag.cross_validator { background: #d1ecf1; color: #0c5460; }
-.opus-q-tag.dataset_context { background: #d4edda; color: #155724; }
-.opus-q-tag.oxi_state { background: #f3e5f5; color: #7b1fa2; }
 
 
 /* ---- Claude dashboard widget ---- */
@@ -675,7 +666,6 @@ sub { font-size: 0.75em; }
 .opus-dashboard-item .opus-d-question {
   font-size: 12px;
   color: var(--so-text);
-  margin-top: 2px;
 }
 
 
@@ -1278,11 +1268,8 @@ function renderMaterialsList() {
       </div>
       <div class="mat-info">
         <div class="mat-title">${formatFormula(mat.reduced_formula)} ${matchPill}</div>
-        <div class="mat-meta">
-          ${mat.space_group || '?'} &middot; ${mat.n_sites || '?'} sites &middot;
-          ID: ${mat.material_id}
-        </div>
         <div class="mat-tags">${tags}</div>
+        ${(() => { const qs = getOpusQuestions(mat.material_id); return qs.length ? `<div class="mat-question"><span style="color:var(--so-orange);font-style:normal;font-weight:600;">Claude asks:</span> ${qs.sort((a,b) => (a.priority||2) - (b.priority||2))[0].question_text}</div>` : ''; })()}
       </div>
     </div>`;
 
@@ -1391,12 +1378,7 @@ function renderDetailPanel(mat) {
     ${opusHtml}
     ${renderMPCrossRef(mat)}
     <div class="detail-section">
-      <h3>Validation Checks</h3>
-      <div style="font-size:12px;color:var(--so-text-light);margin-bottom:12px;">
-        DFT-independent checks use only classical chemistry rules.
-        DFT-dependent checks apply experimental parameters to DFT-relaxed geometry.
-        <strong>Traceable assumptions for every result.</strong>
-      </div>
+      <h3 style="display:flex;align-items:center;gap:6px;">Validation Checks <span class="assumption-tip">?<span class="tip-text">DFT-independent checks use only classical chemistry rules. DFT-dependent checks apply experimental parameters to DFT-relaxed geometry.</span></span></h3>
       ${answersHtml}
     </div>
     <div class="detail-section">
@@ -1743,23 +1725,12 @@ function renderOpusQuestionsHTML(materialId) {
   const questions = getOpusQuestions(materialId);
   if (!questions.length) return '';
 
-  const sorted = [...questions].sort((a, b) => (a.priority || 2) - (b.priority || 2));
-  let html = `<div class="opus-questions-section">
-    <div class="detail-section">
-      <h3 style="color:var(--so-orange);">Claude asks...</h3>`;
+  // Pick the highest-priority question
+  const q = [...questions].sort((a, b) => (a.priority || 2) - (b.priority || 2))[0];
 
-  for (const q of sorted) {
-    html += `<div class="opus-question-card">
-      <div style="margin-bottom:4px;">
-        <span class="opus-q-tag ${q.category}">${q.category.replace('_', ' ')}</span>
-      </div>
-      <div class="opus-q-text">${q.question_text}</div>
-      ${q.evidence ? `<div class="opus-q-evidence">${q.evidence}</div>` : ''}
-    </div>`;
-  }
-
-  html += '</div></div>';
-  return html;
+  return `<div class="claude-question">
+    <span class="claude-question-label">Claude asks:</span> ${q.question_text}
+  </div>`;
 }
 
 function renderOpusDashboardWidget() {
@@ -1782,14 +1753,11 @@ function renderOpusDashboardWidget() {
     return;
   }
 
-  let html = `<h3>Top Claude Questions</h3>`;
+  let html = `<h3>Claude asks...</h3>`;
   for (const q of top) {
     html += `<div class="opus-dashboard-item" onclick="navigateToMaterial('${q.material_id}')">
-      <div>
-        <span class="opus-q-tag ${q.category}">${q.category.replace('_', ' ')}</span>
-        <span class="opus-d-formula">${formatFormula(q.formula)}</span>
-      </div>
-      <div class="opus-d-question">${q.question_text}</div>
+      <span class="opus-d-formula">${formatFormula(q.formula)}</span>
+      <span class="opus-d-question">${q.question_text}</span>
     </div>`;
   }
   document.getElementById('opus-dashboard').innerHTML = html;
