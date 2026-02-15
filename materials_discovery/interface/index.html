@@ -890,13 +890,6 @@ sub { font-size: 0.75em; }
 
   <!-- ---- Sidebar ---- -->
   <aside class="sidebar">
-    <div class="opus-sidebar-stats" id="opus-sidebar">
-      <div class="sidebar-widget">
-        <div class="sidebar-widget-header" style="background:var(--so-orange);color:#fff;">Claude Question Stats</div>
-        <div class="sidebar-widget-body" id="opus-sidebar-content"></div>
-      </div>
-    </div>
-
     <div class="sidebar-widget">
       <div class="sidebar-widget-header">Interesting Failures</div>
       <div class="sidebar-widget-body" id="hot-questions"></div>
@@ -1802,27 +1795,6 @@ function renderOpusDashboardWidget() {
   document.getElementById('opus-dashboard').innerHTML = html;
 }
 
-function renderOpusSidebarWidget() {
-  const questions = DATA.opus_questions || {};
-  const matCount = Object.keys(questions).length;
-  const totalQs = Object.values(questions).reduce((s, qs) => s + qs.length, 0);
-
-  // Category breakdown
-  const cats = {};
-  for (const qs of Object.values(questions)) {
-    for (const q of qs) {
-      cats[q.category] = (cats[q.category] || 0) + 1;
-    }
-  }
-
-  let html = '';
-  html += `<div class="stat-row"><span>Materials with questions</span><span class="stat-val">${matCount}</span></div>`;
-  html += `<div class="stat-row"><span>Total questions</span><span class="stat-val">${totalQs}</span></div>`;
-  for (const [cat, count] of Object.entries(cats).sort((a, b) => b[1] - a[1])) {
-    html += `<div class="stat-row"><span><span class="opus-q-tag ${cat}">${cat.replace('_', ' ')}</span></span><span class="stat-val">${count}</span></div>`;
-  }
-  document.getElementById('opus-sidebar-content').innerHTML = html;
-}
 
 /* ============================================================
    Initialize
@@ -1831,7 +1803,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDashboard();
   renderSidebar();
   renderOpusDashboardWidget();
-  renderOpusSidebarWidget();
 
   // Shared tooltip element
   const tooltip = document.createElement('div');
