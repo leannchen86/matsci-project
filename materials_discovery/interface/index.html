@@ -1409,27 +1409,40 @@ function renderPagination(total) {
   const nPages = Math.ceil(total / PAGE_SIZE);
   if (nPages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
 
-  let html = '';
   const current = state.page;
-  const maxShow = 7;
-  let startP = Math.max(0, current - 3);
-  let endP = Math.min(nPages, startP + maxShow);
-  if (endP - startP < maxShow) startP = Math.max(0, endP - maxShow);
+  const pages = new Set();
+
+  // Always show first and last
+  pages.add(0);
+  pages.add(nPages - 1);
+
+  // Show window around current
+  for (let i = Math.max(0, current - 2); i <= Math.min(nPages - 1, current + 2); i++) {
+    pages.add(i);
+  }
+
+  const sorted = [...pages].sort((a, b) => a - b);
+  let html = '';
 
   if (current > 0) html += `<button onclick="goPage(${current - 1})">Prev</button>`;
-  for (let i = startP; i < endP; i++) {
-    html += `<button class="${i === current ? 'active' : ''}" onclick="goPage(${i})">${i + 1}</button>`;
+
+  let prev = -1;
+  for (const p of sorted) {
+    if (prev >= 0 && p - prev > 1) html += `<span style="padding:4px 2px;color:var(--so-text-light);">&hellip;</span>`;
+    html += `<button class="${p === current ? 'active' : ''}" onclick="goPage(${p})">${p + 1}</button>`;
+    prev = p;
   }
+
   if (current < nPages - 1) html += `<button onclick="goPage(${current + 1})">Next</button>`;
+
 
   document.getElementById('pagination').innerHTML = html;
 }
 
 function goPage(p) {
   state.page = p;
-  state.expandedId = null;
   renderMaterialsList();
-  window.scrollTo(0, 200);
+  window.scrollTo(0, document.body.scrollHeight);
 }
 
 /* ============================================================
@@ -1833,9 +1846,9 @@ function handleRoute() {
     const idx = mats.findIndex(m => m.material_id === id);
     state.page = idx >= 0 ? Math.floor(idx / PAGE_SIZE) : 0;
     showTab('materials', false);
-  } else if (path === '/materials') {
+  } else if (path === '/materials' || path === '/materials/') {
     showTab('materials', false);
-  } else if (path === '/validators') {
+  } else if (path === '/validators' || path === '/validators/') {
     showTab('validators', false);
   } else {
     showTab('dashboard', false);
