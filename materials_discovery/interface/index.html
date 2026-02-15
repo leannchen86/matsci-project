@@ -517,49 +517,11 @@ body {
   font-weight: 400;
   margin-bottom: 4px;
 }
-.hero-banner h2 .accent { color: var(--so-orange); font-weight: 700; }
 .hero-banner .hero-sub {
   font-size: 14px;
   color: #b6bdc4;
   margin-bottom: 16px;
 }
-.hero-material {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 6px;
-  padding: 16px;
-  display: flex;
-  gap: 20px;
-  cursor: pointer;
-}
-.hero-material:hover { background: rgba(255,255,255,0.1); }
-.hero-material .hero-formula {
-  font-size: 24px;
-  font-weight: 300;
-  color: var(--so-orange);
-  min-width: 140px;
-}
-.hero-material .hero-checks {
-  flex: 1;
-}
-.hero-check-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 3px 0;
-  font-size: 13px;
-}
-.hero-check-row .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.hero-check-row .dot.good { background: var(--check-good); }
-.hero-check-row .dot.bad { background: var(--check-bad); }
-.hero-check-row .dot.skip { background: var(--check-skip); }
-.hero-check-row .check-label { color: #b6bdc4; min-width: 140px; }
-.hero-check-row .check-val { color: #fff; }
 
 /* ---- Pagination ---- */
 .pagination {
@@ -776,12 +738,11 @@ sub { font-size: 0.75em; }
     <!-- ---- Dashboard tab ---- -->
     <div id="tab-dashboard" class="tab-content">
       <div class="hero-banner">
-        <h2>Welcome to <span class="accent">TBD</span></h2>
+        <h2 style="color:var(--so-orange);font-weight:600;">Claude is curious about materials</h2>
         <div class="hero-sub">
-          Auditing 3,262 ternary oxygen-containing compounds from GNoME's ~380k stable predictions
-          with classical chemistry rules &mdash; independent of the DFT/ML training pipeline
+          Asking textbook chemistry questions about 3,262 ternary oxygen-containing compounds
+          from GNoME's ~380k stable predictions &mdash; no DFT, no ML, just classical rules
         </div>
-        <div id="hero-featured"></div>
       </div>
 
       <div class="opus-dashboard-widget" id="opus-dashboard"></div>
@@ -1558,48 +1519,6 @@ function renderDashboard() {
     boxmode: 'group',
   }, { responsive: true, displayModeBar: false });
 
-  // Hero featured failure
-  renderHeroFailure();
-}
-
-function renderHeroFailure() {
-  const tierConflict = DATA.interesting_failures?.tier_conflict;
-  if (!tierConflict?.items?.length) return;
-
-  const mat = tierConflict.items[0];
-  const full = DATA.materials.find(m => m.material_id === mat.material_id);
-  if (!full) return;
-
-  const checks = [
-    { name: 'Charge Neutrality', val: `Residual: ${mat.charge}`, color: mat.charge === 0 ? 'good' : 'bad' },
-    { name: 'Shannon Radii', val: `Violations: ${(mat.shannon * 100).toFixed(0)}%`, color: mat.shannon === 0 ? 'good' : 'bad' },
-    { name: "Pauling's Rule 2", val: `Violations: ${(mat.pauling * 100).toFixed(0)}%`, color: mat.pauling === 0 ? 'good' : 'bad' },
-    { name: 'Bond Valence Sum', val: `GII: ${mat.gii?.toFixed(2)} v.u.`, color: mat.gii <= 0.2 ? 'good' : 'bad' },
-  ];
-
-  const checksHtml = checks.map(c =>
-    `<div class="hero-check-row">
-      <div class="dot ${c.color}"></div>
-      <span class="check-label">${c.name}</span>
-      <span class="check-val">${c.val}</span>
-    </div>`
-  ).join('');
-
-  document.getElementById('hero-featured').innerHTML = `
-    <div style="font-size:12px;color:var(--so-orange);margin-bottom:6px;font-weight:600;">
-      Featured Failure &mdash; "${tierConflict.label}"
-    </div>
-    <div class="hero-material" onclick="navigateToMaterial('${mat.material_id}')">
-      <div class="hero-formula">${formatFormula(mat.reduced_formula)}</div>
-      <div class="hero-checks">
-        ${checksHtml}
-        <div style="font-size:11px;color:#848d95;margin-top:6px;">
-          All DFT-independent checks pass, but DFT-dependent checks show high geometric instability.
-          <strong>Click to see the full breakdown &rarr;</strong>
-        </div>
-      </div>
-    </div>
-  `;
 }
 
 function navigateToMaterial(materialId) {
