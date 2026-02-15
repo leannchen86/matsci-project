@@ -1288,6 +1288,16 @@ function renderMaterialsList() {
   document.getElementById('materials-list').innerHTML = html;
   renderPagination(total);
 
+  // Scroll to expanded row on initial load
+  if (state._scrollToExpanded) {
+    state._scrollToExpanded = false;
+    const expandedEl = document.querySelector('.material-list-item.expanded');
+    if (expandedEl) {
+      expandedEl.scrollIntoView({ block: 'start' });
+      window.scrollBy(0, -60);
+    }
+  }
+
   // Watch the claude question in detail panel — restore row question when it scrolls away
   const detailQ = document.getElementById('detail-claude-q');
   const rowQ = document.getElementById('row-claude-q');
@@ -1412,8 +1422,10 @@ function renderDetailPanel(mat) {
 function toggleDetail(materialId) {
   if (state.expandedId === materialId) {
     state.expandedId = null;
+    history.pushState(null, '', '/materials');
   } else {
     state.expandedId = materialId;
+    history.pushState({ material: materialId }, '', '/materials/' + materialId);
   }
   renderMaterialsList();
 }
@@ -1603,10 +1615,12 @@ function renderHeroFailure() {
 }
 
 function navigateToMaterial(materialId) {
-  state.searchQuery = materialId;
-  document.getElementById('searchInput').value = materialId;
+  state.searchQuery = '';
+  document.getElementById('searchInput').value = '';
   state.expandedId = materialId;
-  state.page = 0;
+  const mats = getFilteredMaterials();
+  const idx = mats.findIndex(m => m.material_id === materialId);
+  state.page = idx >= 0 ? Math.floor(idx / PAGE_SIZE) : 0;
   showTab('materials', false);
   history.pushState({ material: materialId }, '', '/materials/' + materialId);
 }
@@ -1839,10 +1853,11 @@ function handleRoute() {
   const matMatch = path.match(/^\/materials\/(.+)$/);
   if (matMatch) {
     const id = decodeURIComponent(matMatch[1]);
-    state.searchQuery = id;
-    document.getElementById('searchInput').value = id;
     state.expandedId = id;
-    state.page = 0;
+    state._scrollToExpanded = true;
+    const mats = getFilteredMaterials();
+    const idx = mats.findIndex(m => m.material_id === id);
+    state.page = idx >= 0 ? Math.floor(idx / PAGE_SIZE) : 0;
     showTab('materials', false);
   } else if (path === '/materials') {
     showTab('materials', false);
@@ -1856,15 +1871,13 @@ function handleRoute() {
 window.addEventListener('popstate', (e) => {
   // Restore material state if available
   if (e.state?.material) {
-    state.searchQuery = e.state.material;
-    document.getElementById('searchInput').value = e.state.material;
     state.expandedId = e.state.material;
-    state.page = 0;
+    const mats = getFilteredMaterials();
+    const idx = mats.findIndex(m => m.material_id === e.state.material);
+    state.page = idx >= 0 ? Math.floor(idx / PAGE_SIZE) : 0;
     showTab('materials', false);
   } else {
-    state.searchQuery = '';
     state.expandedId = null;
-    document.getElementById('searchInput').value = '';
     handleRoute();
   }
 });
