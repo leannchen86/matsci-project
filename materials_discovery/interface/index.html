@@ -7,7 +7,7 @@
 <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
 <style>
 /* ============================================================
-   TBD — SO-inspired theme
+   TBD — Theme
    ============================================================ */
 :root {
   --so-orange: #F48024;
@@ -44,7 +44,7 @@ body {
   line-height: 1.5;
 }
 
-/* ---- Header (SO top bar) ---- */
+/* ---- Header ---- */
 .header {
   background: var(--so-dark);
   height: 50px;
@@ -67,7 +67,6 @@ body {
   padding: 0 8px;
   cursor: pointer;
 }
-.header-logo .logo-icon { font-size: 24px; }
 .header-logo .logo-stack { font-weight: 300; }
 .header-logo .logo-over { font-weight: 700; color: var(--so-orange); }
 .header-logo .logo-bond { font-weight: 300; }
@@ -107,31 +106,6 @@ body {
 }
 .header-search input:focus { border-color: var(--so-link); background: #232629; }
 .header-search input::placeholder { color: #848d95; }
-.header-search .search-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #848d95;
-  font-size: 14px;
-}
-
-.header-user {
-  margin-left: auto;
-  color: #b6bdc4;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.header-user .rep {
-  background: var(--so-orange);
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-weight: 700;
-  font-size: 11px;
-}
 
 /* ---- Main layout ---- */
 .main-container {
@@ -156,12 +130,8 @@ body {
   font-weight: 400;
   color: var(--so-text);
 }
-.content-header .subtitle {
-  font-size: 13px;
-  color: var(--so-text-light);
-}
 
-/* ---- Material list (SO question list) ---- */
+/* ---- Material list ---- */
 .material-list-item {
   background: var(--so-white);
   border: 1px solid var(--so-border);
@@ -220,10 +190,7 @@ body {
 .confidence-bar .seg.bad { background: var(--check-bad); }
 .confidence-bar .seg.skip { background: var(--check-skip); }
 
-.confidence-label {
-  font-size: 11px;
-  color: var(--so-text-light);
-}
+
 .confidence-score {
   font-size: 18px;
   font-weight: 600;
@@ -278,8 +245,6 @@ body {
 .tag.novel { background: #d4edda; color: #155724; }
 .tag.comp-known { background: #fff3cd; color: #856404; }
 .tag.exp-known { background: #d1ecf1; color: #0c5460; }
-.tag.tier1 { background: #e8f5e9; color: var(--tier1); }
-.tag.tier2 { background: #e3e8ef; color: var(--tier2); }
 .tag.oxi-low { background: #fce4e4; color: var(--so-red); }
 .tag.mixed-valence { background: #f3e5f5; color: #7b1fa2; }
 
@@ -305,7 +270,7 @@ body {
   padding-bottom: 4px;
 }
 
-/* Check "answer" cards */
+/* ---- Validation check cards ---- */
 .check-answer {
   border: 1px solid var(--so-border);
   border-radius: 4px;
@@ -405,7 +370,7 @@ body {
   margin: 2px 0;
 }
 
-/* ---- Sidebar widgets (SO-style) ---- */
+/* ---- Sidebar widgets ---- */
 .sidebar-widget {
   background: var(--so-white);
   border: 1px solid var(--so-border);
@@ -425,7 +390,7 @@ body {
   padding: 12px 14px;
 }
 
-/* Hot Network Questions */
+/* ---- Interesting failures ---- */
 .hot-item {
   display: flex;
   gap: 8px;
@@ -568,13 +533,6 @@ body {
   color: #b6bdc4;
   margin-bottom: 16px;
 }
-.hero-banner .hero-tagline {
-  font-size: 12px;
-  color: #848d95;
-  font-style: italic;
-  margin-top: 12px;
-}
-
 .hero-material {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
@@ -636,22 +594,6 @@ body {
 }
 .pagination button:hover:not(.active) { background: #e3e6e8; }
 
-/* ---- Footer ---- */
-.footer {
-  background: #2d2d2d;
-  color: #848d95;
-  padding: 24px 16px;
-  text-align: center;
-  font-size: 12px;
-  margin-top: 48px;
-}
-.footer a { color: var(--so-orange); text-decoration: none; }
-.footer .footer-tagline {
-  font-size: 14px;
-  color: #b6bdc4;
-  margin-bottom: 8px;
-}
-
 /* ---- Responsive ---- */
 @media (max-width: 980px) {
   .sidebar { display: none; }
@@ -668,7 +610,7 @@ body {
 .mb-8 { margin-bottom: 8px; }
 sub { font-size: 0.75em; }
 
-/* ---- Opus question cards ---- */
+/* ---- Claude question cards ---- */
 .opus-question-card {
   background: #FFF8F0;
   border: 1px solid #f0dcc0;
@@ -702,9 +644,9 @@ sub { font-size: 0.75em; }
 .opus-q-tag.cross_validator { background: #d1ecf1; color: #0c5460; }
 .opus-q-tag.dataset_context { background: #d4edda; color: #155724; }
 .opus-q-tag.oxi_state { background: #f3e5f5; color: #7b1fa2; }
-.opus-q-tag.priority-1 { border: 1px solid currentColor; }
 
-/* Opus dashboard widget */
+
+/* ---- Claude dashboard widget ---- */
 .opus-dashboard-widget {
   background: #FFF8F0;
   border: 1px solid #f0dcc0;
@@ -754,11 +696,6 @@ sub { font-size: 0.75em; }
   background: var(--so-yellow-bg);
   border: 2px solid #d4a017;
 }
-.mp-crossref.novel {
-  background: #e8f5e9;
-  border: 2px solid var(--check-good);
-  border-style: dashed;
-}
 .mp-crossref-icon {
   font-size: 28px;
   flex-shrink: 0;
@@ -795,7 +732,6 @@ sub { font-size: 0.75em; }
 }
 .synth-badge.synth { background: var(--so-green); color: #fff; }
 .synth-badge.not-synth { background: #d4a017; color: #fff; }
-.synth-badge.pioneer { background: var(--check-good); color: #fff; }
 
 /* ---- Related Materials ---- */
 .related-materials {
@@ -848,7 +784,6 @@ sub { font-size: 0.75em; }
      ============================================================ -->
 <header class="header">
   <a class="header-logo" onclick="showTab('dashboard')">
-    <span class="logo-icon"></span>
     <span class="logo-stack">T</span><span class="logo-over">B</span><span class="logo-bond">D</span>
   </a>
 
@@ -969,10 +904,6 @@ sub { font-size: 0.75em; }
 
   </aside>
 </div>
-
-<!-- ============================================================
-     FOOTER
-     ============================================================ -->
 
 <script src="/data.js"></script>
 <script>
@@ -1777,7 +1708,7 @@ function renderValidators() {
         <div class="detail-row"><strong>Metric:</strong> ${cm.metric}</div>
         <div class="detail-row"><strong>Coverage:</strong> ${coverage.toLocaleString()} / ${DATA.stats.total.toLocaleString()} materials (${coveragePct}%)</div>
         ${s.mean != null ? `<div class="detail-row"><strong>Mean:</strong> ${s.mean} &nbsp; <strong>Median:</strong> ${s.median} &nbsp; <strong>P25-P75:</strong> ${s.p25} &ndash; ${s.p75}</div>` : ''}
-        <div class="assumption"><strong>Assumption:</strong> ${cm.assumption}</div>
+        <div class="detail-row" style="margin-top:6px;"><strong>Assumption:</strong> ${cm.assumption}</div>
         <div id="chart-validator-${cm.name}" style="height:180px;margin-top:12px;"></div>
       </div>
     </div>`;
