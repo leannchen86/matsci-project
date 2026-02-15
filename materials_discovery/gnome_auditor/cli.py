@@ -46,6 +46,12 @@ def cmd_chat(args):
     run_chat()
 
 
+def cmd_opus(args):
+    """Generate Opus research questions for materials."""
+    from gnome_auditor.opus_questions import generate_questions
+    generate_questions(subset=args.subset, max_count=args.max, fresh=args.fresh)
+
+
 def cmd_stats(args):
     """Print database statistics."""
     from gnome_auditor.db.store import get_connection, get_statistics, get_audit_summary
@@ -113,6 +119,14 @@ def main():
     # chat
     sub = subparsers.add_parser("chat", help="Start Claude research assistant")
     sub.set_defaults(func=cmd_chat)
+
+    # opus
+    sub = subparsers.add_parser("opus", help="Generate Opus research questions")
+    sub.add_argument("--subset", choices=["interesting", "novel", "all"], default="interesting",
+                     help="Which materials to process (default: interesting)")
+    sub.add_argument("--max", type=int, default=None, help="Max materials to process")
+    sub.add_argument("--fresh", action="store_true", help="Ignore checkpoint, start fresh")
+    sub.set_defaults(func=cmd_opus)
 
     # stats
     sub = subparsers.add_parser("stats", help="Print database statistics")

@@ -269,6 +269,46 @@ def compute_aggregate_stats(materials):
     }
 
 
+def inject_opus_questions():
+    """Inject opus questions into an existing data.js without needing SQLite."""
+    output_path = OUTPUT_DIR / "data.js"
+    if not output_path.exists():
+        print("Error: data.js not found. Run full export first.")
+        return False
+
+    opus_questions_path = Path(__file__).parent.parent / "data" / "opus_questions.json"
+    if not opus_questions_path.exists():
+        print("Error: opus_questions.json not found. Run: python -m gnome_auditor.opus_questions")
+        return False
+
+    print(f"Reading existing data.js ({output_path.stat().st_size / 1024 / 1024:.1f} MB)...")
+    raw = output_path.read_text()
+    json_str = raw[len("const DATA = "):-2]
+    data = json.loads(json_str)
+
+    # Load opus questions
+    with open(opus_questions_path) as f:
+        raw_questions = json.load(f)
+    opus_questions = {}
+    for mat_id, entry in raw_questions.items():
+        if entry.get("questions"):
+            opus_questions[mat_id] = entry["questions"]
+
+    data["opus_questions"] = opus_questions
+    data["meta"]["opus_questions_count"] = len(opus_questions)
+    print(f"  Injected questions for {len(opus_questions)} materials")
+
+    print(f"Writing {output_path}...")
+    with open(output_path, "w") as f:
+        f.write("const DATA = ")
+        json.dump(data, f, separators=(",", ":"))
+        f.write(";\n")
+
+    size_mb = output_path.stat().st_size / (1024 * 1024)
+    print(f"  {size_mb:.1f} MB written")
+    return True
+
+
 def run_export():
     conn = get_conn()
     print("Exporting materials...")
@@ -343,15 +383,30 @@ def run_export():
             "checks": check_summary,
         })
 
+    # Load Opus questions if available
+    opus_questions = {}
+    opus_questions_path = Path(__file__).parent.parent / "data" / "opus_questions.json"
+    if opus_questions_path.exists():
+        with open(opus_questions_path) as f:
+            raw = json.load(f)
+        for mat_id, entry in raw.items():
+            if entry.get("questions"):
+                opus_questions[mat_id] = entry["questions"]
+        print(f"  Loaded Opus questions for {len(opus_questions)} materials")
+    else:
+        print("  No opus_questions.json found (run: python -m gnome_auditor.opus_questions)")
+
     output = {
         "materials": material_list,
         "details": material_details,
         "interesting_failures": interesting,
         "stats": stats,
+        "opus_questions": opus_questions,
         "meta": {
             "total_materials": len(materials),
             "export_timestamp": datetime.now().isoformat(),
             "platform": "StackOverBond",
+            "opus_questions_count": len(opus_questions),
         },
     }
 
@@ -371,4 +426,8 @@ def run_export():
 
 
 if __name__ == "__main__":
-    run_export()
+    import sys
+    if "--inject-opus" in sys.argv:
+        inject_opus_questions()
+    else:
+        run_export()

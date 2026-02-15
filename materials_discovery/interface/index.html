@@ -616,6 +616,148 @@ body {
 .mt-8 { margin-top: 8px; }
 .mb-8 { margin-bottom: 8px; }
 sub { font-size: 0.75em; }
+
+/* ---- Opus Lens toggle ---- */
+.opus-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.opus-toggle .toggle-label {
+  color: #848d95;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color .2s;
+}
+.opus-toggle.active .toggle-label {
+  color: var(--so-orange);
+}
+.opus-toggle .toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: #555;
+  position: relative;
+  transition: background .2s;
+}
+.opus-toggle.active .toggle-track {
+  background: var(--so-orange);
+}
+.opus-toggle .toggle-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform .2s;
+}
+.opus-toggle.active .toggle-thumb {
+  transform: translateX(16px);
+}
+
+/* ---- Opus question cards ---- */
+.opus-questions-section {
+  overflow: hidden;
+  transition: max-height .35s ease, opacity .25s ease;
+  max-height: 0;
+  opacity: 0;
+}
+.opus-questions-section.visible {
+  max-height: 2000px;
+  opacity: 1;
+}
+.opus-question-card {
+  background: #FFF8F0;
+  border: 1px solid #f0dcc0;
+  border-left: 4px solid var(--so-orange);
+  border-radius: 0 4px 4px 0;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.opus-question-card .opus-q-text {
+  font-size: 14px;
+  color: var(--so-text);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.opus-question-card .opus-q-evidence {
+  font-size: 12px;
+  color: var(--so-text-light);
+  font-style: italic;
+}
+.opus-q-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.opus-q-tag.anomaly { background: #fce4e4; color: var(--so-red); }
+.opus-q-tag.cross_validator { background: #d1ecf1; color: #0c5460; }
+.opus-q-tag.dataset_context { background: #d4edda; color: #155724; }
+.opus-q-tag.oxi_state { background: #f3e5f5; color: #7b1fa2; }
+.opus-q-tag.priority-1 { border: 1px solid currentColor; }
+
+/* Opus dashboard widget */
+.opus-dashboard-widget {
+  background: #FFF8F0;
+  border: 1px solid #f0dcc0;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: max-height .35s ease, opacity .25s ease;
+  max-height: 0;
+  opacity: 0;
+}
+.opus-dashboard-widget.visible {
+  max-height: 2000px;
+  opacity: 1;
+}
+.opus-dashboard-widget h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--so-orange);
+  margin-bottom: 12px;
+}
+.opus-dashboard-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0dcc0;
+  cursor: pointer;
+}
+.opus-dashboard-item:last-child { border-bottom: none; }
+.opus-dashboard-item:hover { background: #FFF0E0; margin: 0 -16px; padding: 8px 16px; }
+.opus-dashboard-item .opus-d-formula {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--so-link);
+}
+.opus-dashboard-item .opus-d-question {
+  font-size: 12px;
+  color: var(--so-text);
+  margin-top: 2px;
+}
+
+/* Opus sidebar widget */
+.opus-sidebar-stats {
+  overflow: hidden;
+  transition: max-height .35s ease, opacity .25s ease;
+  max-height: 0;
+  opacity: 0;
+}
+.opus-sidebar-stats.visible {
+  max-height: 500px;
+  opacity: 1;
+}
 </style>
 </head>
 <body>
@@ -638,6 +780,11 @@ sub { font-size: 0.75em; }
   <div class="header-search">
     <span class="search-icon">&#128269;</span>
     <input type="text" id="searchInput" placeholder="Search by formula, element, or ID..." onkeyup="handleSearch(event)">
+  </div>
+
+  <div class="opus-toggle" id="opusToggle" onclick="toggleOpus()">
+    <span class="toggle-label">Opus Lens</span>
+    <div class="toggle-track"><div class="toggle-thumb"></div></div>
   </div>
 
   <div class="header-user">
@@ -665,6 +812,8 @@ sub { font-size: 0.75em; }
           "Stack Overflow took 15 years to make AI good enough to kill it. We're speedrunning." &mdash; est. 2025
         </div>
       </div>
+
+      <div class="opus-dashboard-widget" id="opus-dashboard"></div>
 
       <div class="dashboard-grid">
         <div class="dashboard-card">
@@ -747,6 +896,13 @@ sub { font-size: 0.75em; }
 
   <!-- ---- Sidebar ---- -->
   <aside class="sidebar">
+    <div class="opus-sidebar-stats" id="opus-sidebar">
+      <div class="sidebar-widget">
+        <div class="sidebar-widget-header" style="background:var(--so-orange);color:#fff;">Opus Lens Stats</div>
+        <div class="sidebar-widget-body" id="opus-sidebar-content"></div>
+      </div>
+    </div>
+
     <div class="sidebar-widget">
       <div class="sidebar-widget-header">&#128293; Interesting Failures</div>
       <div class="sidebar-widget-body" id="hot-questions"></div>
@@ -790,6 +946,7 @@ let state = {
   expandedId: null,
   searchQuery: '',
   filters: { class: '', novelty: '', oxi: '' },
+  opusEnabled: false,
 };
 
 /* ============================================================
@@ -1148,7 +1305,10 @@ function renderDetailPanel(mat) {
       mvEl.map(mv => `${mv.element} (${mv.states.join('/')})`).join(', ') + '</div>';
   }
 
+  const opusHtml = renderOpusQuestionsHTML(mat.material_id);
+
   return `<div class="detail-panel open">
+    ${opusHtml}
     <div class="detail-section">
       <h3>5 Answers &mdash; sorted by epistemic independence</h3>
       <div style="font-size:12px;color:var(--so-text-light);margin-bottom:12px;">
@@ -1525,6 +1685,125 @@ function renderValidators() {
       bargap: 0.1,
     }, { responsive: true, displayModeBar: false });
   }
+}
+
+/* ============================================================
+   Opus Lens
+   ============================================================ */
+function toggleOpus() {
+  state.opusEnabled = !state.opusEnabled;
+  document.getElementById('opusToggle').classList.toggle('active', state.opusEnabled);
+
+  // Toggle question sections in currently rendered detail panels
+  document.querySelectorAll('.opus-questions-section').forEach(el => {
+    el.classList.toggle('visible', state.opusEnabled);
+  });
+
+  // Toggle dashboard widget
+  const dashWidget = document.getElementById('opus-dashboard');
+  if (state.opusEnabled) {
+    renderOpusDashboardWidget();
+    dashWidget.classList.add('visible');
+  } else {
+    dashWidget.classList.remove('visible');
+  }
+
+  // Toggle sidebar widget
+  const sidebarWidget = document.getElementById('opus-sidebar');
+  if (state.opusEnabled) {
+    renderOpusSidebarWidget();
+    sidebarWidget.classList.add('visible');
+  } else {
+    sidebarWidget.classList.remove('visible');
+  }
+}
+
+function getOpusQuestions(materialId) {
+  return DATA.opus_questions?.[materialId] || [];
+}
+
+function renderOpusQuestionsHTML(materialId) {
+  const questions = getOpusQuestions(materialId);
+  if (!questions.length) return '';
+
+  const sorted = [...questions].sort((a, b) => (a.priority || 2) - (b.priority || 2));
+  let html = `<div class="opus-questions-section ${state.opusEnabled ? 'visible' : ''}">
+    <div class="detail-section">
+      <h3 style="color:var(--so-orange);">Questions This Data Is Asking</h3>
+      <div style="font-size:12px;color:var(--so-text-light);margin-bottom:12px;">
+        Generated by Claude Opus 4.6 from the validation profile. Not claims &mdash; research directions.
+      </div>`;
+
+  for (const q of sorted) {
+    const priorityTag = q.priority === 1 ? ' priority-1' : '';
+    html += `<div class="opus-question-card">
+      <div style="margin-bottom:4px;">
+        <span class="opus-q-tag ${q.category}${priorityTag}">${q.category.replace('_', ' ')}</span>
+        ${q.priority === 1 ? '<span class="opus-q-tag anomaly priority-1">high priority</span>' : ''}
+      </div>
+      <div class="opus-q-text">${q.question_text}</div>
+      ${q.evidence ? `<div class="opus-q-evidence">${q.evidence}</div>` : ''}
+    </div>`;
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderOpusDashboardWidget() {
+  const questions = DATA.opus_questions || {};
+  const allQs = [];
+  for (const [matId, qs] of Object.entries(questions)) {
+    const mat = DATA.materials.find(m => m.material_id === matId);
+    for (const q of qs) {
+      allQs.push({ ...q, material_id: matId, formula: mat?.reduced_formula || matId });
+    }
+  }
+
+  // Sort by priority, take top 5
+  allQs.sort((a, b) => (a.priority || 2) - (b.priority || 2));
+  const top = allQs.slice(0, 5);
+
+  if (!top.length) {
+    document.getElementById('opus-dashboard').innerHTML =
+      '<h3>Opus Lens</h3><div style="font-size:12px;color:var(--so-text-light);">No questions generated yet. Run: <code>python -m gnome_auditor.opus_questions</code></div>';
+    return;
+  }
+
+  let html = `<h3>Top Opus Questions</h3>`;
+  for (const q of top) {
+    html += `<div class="opus-dashboard-item" onclick="navigateToMaterial('${q.material_id}')">
+      <div>
+        <span class="opus-q-tag ${q.category}">${q.category.replace('_', ' ')}</span>
+        <span class="opus-d-formula">${formatFormula(q.formula)}</span>
+      </div>
+      <div class="opus-d-question">${q.question_text}</div>
+    </div>`;
+  }
+  document.getElementById('opus-dashboard').innerHTML = html;
+}
+
+function renderOpusSidebarWidget() {
+  const questions = DATA.opus_questions || {};
+  const matCount = Object.keys(questions).length;
+  const totalQs = Object.values(questions).reduce((s, qs) => s + qs.length, 0);
+
+  // Category breakdown
+  const cats = {};
+  for (const qs of Object.values(questions)) {
+    for (const q of qs) {
+      cats[q.category] = (cats[q.category] || 0) + 1;
+    }
+  }
+
+  let html = '';
+  html += `<div class="stat-row"><span>Materials with questions</span><span class="stat-val">${matCount}</span></div>`;
+  html += `<div class="stat-row"><span>Total questions</span><span class="stat-val">${totalQs}</span></div>`;
+  for (const [cat, count] of Object.entries(cats).sort((a, b) => b[1] - a[1])) {
+    html += `<div class="stat-row"><span><span class="opus-q-tag ${cat}">${cat.replace('_', ' ')}</span></span><span class="stat-val">${count}</span></div>`;
+  }
+  html += `<div style="font-size:10px;color:var(--so-text-light);margin-top:8px;">Model: Claude Opus 4.6</div>`;
+  document.getElementById('opus-sidebar-content').innerHTML = html;
 }
 
 /* ============================================================
