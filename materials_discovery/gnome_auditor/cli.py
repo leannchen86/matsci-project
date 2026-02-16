@@ -1,6 +1,6 @@
 """CLI entry points for the GNoME Auditor.
 
-Subcommands: ingest, validate, cross-ref, chat, stats
+Subcommands: ingest, validate, cross-ref, opus, stats
 """
 
 import argparse
@@ -38,12 +38,6 @@ def cmd_crossref(args):
     """Run Materials Project cross-referencing."""
     from gnome_auditor.data.mp_cross_ref import run_mp_cross_reference
     run_mp_cross_reference(api_key=args.api_key)
-
-
-def cmd_chat(args):
-    """Start the Claude research assistant chat."""
-    from gnome_auditor.claude_interface import run_chat
-    run_chat()
 
 
 def cmd_opus(args):
@@ -124,10 +118,6 @@ def main():
     sub = subparsers.add_parser("cross-ref", help="Run Materials Project cross-referencing")
     sub.add_argument("--api-key", help="MP API key (or set MP_API_KEY env var)")
     sub.set_defaults(func=cmd_crossref)
-
-    # chat
-    sub = subparsers.add_parser("chat", help="Start Claude research assistant")
-    sub.set_defaults(func=cmd_chat)
 
     # opus
     sub = subparsers.add_parser("opus", help="Show Opus research questions status")

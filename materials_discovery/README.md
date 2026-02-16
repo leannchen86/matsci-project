@@ -1,169 +1,95 @@
-# Materials Discovery: GNoME
+# StackOverBond
 
-[**Dataset**](#dataset)
-| [**Models**](#models)
-| [**GNoME Auditor**](#gnome-auditor)
-| [**Colabs**](#colabs)
-| [**License**](#license)
-| [**Disclaimer**](#disclaimer)
-| [**Upcoming**](#upcoming)
-| [**Citing**](#citing)
+An independent audit of Google DeepMind's [GNoME](https://www.nature.com/articles/s41586-023-06735-9) crystal structure predictions using classical chemistry rules — presented in a Stack Overflow-inspired interface.
 
-### What is Materials Discovery: GNoME?
+GNoME predicted ~520k materials using graph neural networks trained on DFT data. We apply **textbook chemistry checks completely independent of the DFT/ML pipeline** to 3,262 ternary oxygen-containing compounds, then let Claude ask research questions about the results.
 
-From microchips to batteries and photovoltaics, discovery of inorganic crystals
-is a fundamental problem in materials science. Graph Networks for Materials
-Science (GNoME) is a project centered around scaling machine learning methods
-to tackle this core task. With results recently published, this repository
-serves to share the discovery of 381,000 novel stable materials with the wider
-materials science community and hopefully enable exciting new research via the
-updated convex hull.
-
-As of August 2024, we have expanded the dataset to release all materials
-measured to be within 1 meV/atom from the convex hull. We hope that this
-provides greater context to the convex hulls in chemical families of interest,
-for a total of >520,000 materials.
-
-This is a research project, not an official Google product. Expect bugs as the
-repository expands and sharp edges. Please help by exploring the structures
-and let us know what you think!
-
-### Contents
-* [**Dataset**](#dataset)
-* [**Models**](#models)
-* [**Colabs**](#colabs)
-* [**License**](#license)
-* [**Disclaimer**](#disclaimer)
-* [**Upcoming**](#upcoming)
-* [**Citing**](#citing)
-
-### Dataset
-
-The dataset described in the original paper is provided across multiple file
-formats. For more details, including how to download the dataset, please see
-our dataset descriptor file in DATASET.md.
-
-**Summarized** A summary of the dataset is provided in CSV format. This file
-contains compositions and raw energies from Density Functional Theory (DFT)
-calculations, as well as other popular measurements (e.g. formation energy and
-decomposition energy).
-
-**Structure** Loading of structures is slightly more cumbersome due to file
-sizes involved. Due to the organization of the convex hull, only one structure
-is needed per composition, so results from the summary can be used to pull
-from the compressed data directory available in the linked Cloud Bucket. An
-alternative approach to extract individual files from the compressed ZIP
-(so as to only extract necessary files) is exemplified in the visualization
-colab.
-
-**r²SCAN** Baseline calculations were performed via PBE functional for the
-calculations. The paper also reports metrics for binaries and tenaries with
-the r²SCAN functional. A summary of calculated energies and associated
-metrics is included for these calculations.
-
-### GNoME Auditor
-
-The `gnome_auditor/` package provides a chemistry-based validation pipeline for auditing GNoME crystal predictions. It applies classical inorganic chemistry rules that are **independent of the DFT/ML training pipeline** to assess chemical plausibility.
-
-#### Motivation
-
-GNoME predicts materials using graph neural networks trained on DFT data. An independent audit using textbook chemistry rules (charge neutrality, Shannon radii, Pauling's rules, bond valence analysis) can flag predictions that violate well-established chemical principles — without circular dependence on the same DFT methods used for training.
-
-#### Pipeline
-
-1. **Data Ingestion** — Filters GNoME's ~520k materials to 3,262 ternary oxygen-containing compounds, extracts CIF structures, classifies by compound type (pure oxide, oxyhalide, oxychalcogenide, oxynitride, oxyhydride)
-2. **Oxidation State Assignment** — Multi-method consensus using pymatgen's BVAnalyzer (structure-aware) and Composition.oxi_state_guesses (composition-only), with mixed-valence detection
-3. **Six Validators:**
-
-| Validator | Rule | Tier | Notes |
-|-----------|------|------|-------|
-| Charge Neutrality | Sum of oxidation states × counts = 0 | 1 (DFT-independent) | Reflects oxi-state assignment quality |
-| Shannon Radii | Bond lengths ≈ sum of Shannon ionic radii ± 25% | 1 | Very lenient — 99% pass |
-| Pauling Rule 2 | Electrostatic valence sum around O sites ≈ 2 | 1 | 78% pass |
-| Goldschmidt | Tolerance factor for perovskites in [0.71, 1.05] | 1 | Only applies to ABO3 (2 in dataset) |
-| Bond Valence Sum | Global Instability Index (GII) | 2 (uses DFT geometry) | Median GII 0.52 v.u. vs ICSD baseline 0.2 |
-| Space Group | Space group occurrence in experimental databases | 2 | 89.7% have novel space groups |
-
-4. **Materials Project Cross-Reference** — Checks each material against MP for novelty, using expert-curated ICSD synthesizability data (52,689 synthesized + 147,843 not-synthesized entries)
-
-#### Key Results
-
-- **74.3% truly novel** — no composition match in Materials Project
-- **25.6% computationally known** — in MP but never experimentally synthesized
-- **0.03% experimentally verified** — only 1 material (Sc₃InO)
-- **18% are mixed-anion compounds** (not pure oxides) — the O²⁻ assumption in several validators may not hold for these
-- BVS "failure" rates primarily reflect the expected geometry offset between DFT-relaxed P1 structures and ICSD experimental structures, not chemical implausibility
-
-#### Usage
+## Quick Start
 
 ```bash
 cd materials_discovery
+python3 -m http.server 8080 --directory interface
+```
+
+Open `http://localhost:8080` in your browser. Everything is pre-built — no install needed to browse.
+
+## Install (if regenerating data)
+
+```bash
+cd materials_discovery
+python3 -m venv .venv
 source .venv/bin/activate
-
-python -m gnome_auditor.cli stats        # View current results
-python -m gnome_auditor.cli ingest       # Load data into SQLite
-python -m gnome_auditor.cli validate     # Run all validators
-python -m gnome_auditor.cli cross-ref    # MP cross-referencing (needs MP_API_KEY)
-python -m gnome_auditor.cli chat         # Claude research interface (needs ANTHROPIC_API_KEY)
+pip install -r requirements.txt
 ```
 
-### Models
+## What You're Looking At
 
-We provide model definitions for the two sets of models used in the paper.
+Each material is a "question" in SO style. The **confidence anatomy bar** (replacing SO's vote count) shows how it scored across 6 validators:
 
-**GNoME** were the predominant model behind new materials
-discovery. This simple message passing architecture was optimized by training
-on a snapshot of Materials Project from 2018, leading to state-of-the-art results
-of 21meV/atom.
+| Validator | What it checks | Tier |
+|-----------|---------------|------|
+| Charge Neutrality | Oxidation states sum to zero | 1 (DFT-independent) |
+| Shannon Radii | Bond lengths match expected ionic radii | 1 |
+| Pauling Rule 2 | Electrostatic valence around O sites | 1 |
+| Goldschmidt | Perovskite tolerance factor | 1 |
+| Bond Valence Sum (GII) | Global bond strain | 2 (uses DFT geometry) |
+| Space Group | Matches experimental databases | 2 |
 
-**Nequip** corresponds to the architecture created by Batzner et al. (2022).
-This architecture was used to train the interatomic potentials described in the
-paper to learn the dynamics from the large dataset. We provide an implementation
-in JAX as well as basic configuration parameters for the corresponding
-architecture.
+**"Claude asks"** — 1,700 materials have a research question generated by Claude, using cross-material family context (sibling compounds in the same chemical system). These are hypotheses, not judgments.
 
-### Colabs
+## Exploring the Data
 
-Colab examples of how to interact with the dataset provide an interface for
-exploring various chemical systems or computing decomposition energies.
+- **Search** by formula, element, or material ID
+- **Sort** by any column — try GII score to find the most strained predictions
+- **Filter** by compound class, crystal system, or MP match type
+- **Interesting Failures** (sidebar) — algorithmically detected anomalies:
+  - *Tier conflict*: all Tier 1 checks pass, Tier 2 fails dramatically
+  - *Suspiciously perfect*: novel material aces every check
+  - *Identity crisis*: oxidation state methods disagree
+  - *Geometric strain*: charge-neutral but extreme bond strain
+- **Expand** any row to see full validation details, worst-site BVS breakdown, and space group comparison
 
-### License
+## Key Findings
 
-The Colab notebooks and associated code provided in this repository are licensed
-under the Apache License, Version 2.0. You may obtain a copy of the License at
-https://www.apache.org/licenses/LICENSE-2.0.
+- 74.3% of predictions are truly novel (no match in Materials Project)
+- 18% are mixed-anion compounds (oxyhalides, oxychalcogenides) where the O2- assumption may not hold
+- Novel predictions are statistically indistinguishable from computationally known materials across all validators (positive signal for GNoME)
+- BVS "failures" primarily reflect the expected offset between DFT-relaxed and experimental geometries
 
-Data contained in the Graph Networks for Materials Exploration Database is available for use under the terms of the Creative Commons Attribution Noncommercial 4.0 International Licence (CC BY NC 4.0).  You may obtain a copy of the License at
-https://creativecommons.org/licenses/by-nc/4.0/. The dataset was created using
-the Vienna Ab initio Simulation Package (VASP) in order to run calculations
-from Density Functional Theory.
+## Project Structure
 
-### Upcoming
-
-- [ ] Reference structures and search paths
-- [ ] Model training colabs and configs
-- [ ] Additional material properties (e.g. electronic band structure)
-
-### Disclaimer
-
-This is not an official Google product.
-
-Graph Networks for Materials Exploration Database, Copyright, Google LLC, (2023).
-
-Data in the Graph Networks for Materials Exploration Database is for theoretical modeling only, caution should be exercised in its use. The Graph Networks for Materials Exploration Database is not  intended for, and is not approved for, any medical or clinical use.  The Graph Networks for Materials Exploration Database is experimental in nature and provided on an “as is” basis. To the maximum extent permitted at law, Google disclaims all representations, conditions and warranties, whether express or implied, in relation to the Graph Networks for Materials Exploration Database (including without limitation for non-infringement of third party intellectual property rights, satisfactory quality, merchantability or fitness for a particular purpose), and the user shall hold Google free and harmless in connection with their use of such content.
-
-### Citing
-
-If you are using this resource please cite our
-[paper](https://www.nature.com/articles/s41586-023-06735-9)
-
-```latex
-  @article{merchant2023scaling,
-    title={Scaling deep learning for materials discovery},
-    author={Amil Merchant and Simon Batzner and Samuel S. Schoenholz and Muratahan Aykol and Gowoon Cheon and Ekin Dogus Cubuk},
-    journal={Nature},
-    year={2023},
-    doi={10.1038/s41586-023-06735-9},
-    href={https://www.nature.com/articles/s41586-023-06735-9},
-}
 ```
+materials_discovery/
+  interface/
+    index.html              # StackOverBond frontend
+    data.js                 # All 3,262 materials + validation results (13 MB)
+  gnome_auditor/
+    cli.py                  # CLI: python -m gnome_auditor.cli {stats,validate,...}
+    pipeline.py             # Validation pipeline orchestration
+    export_data.py          # SQLite -> data.js
+    opus_questions.py       # Question generation docs + prompt
+    analysis.py             # Calibration plots
+    validators/             # 6 validators + oxi state assignment
+    db/                     # SQLite schema + queries
+    data/                   # Ingestion + MP cross-referencing
+    gold_data/              # Synth/not-synth reference CSVs (ICSD)
+  data/
+    opus_questions.json     # 1,700 Claude research questions
+```
+
+## Regenerating
+
+If you have the SQLite database (`data/auditor_db/gnome_auditor.db`):
+
+```bash
+source .venv/bin/activate
+python -m gnome_auditor.export_data      # Regenerate data.js
+python -m gnome_auditor.cli stats        # View pipeline results
+python -m gnome_auditor.analysis         # Generate calibration plots
+```
+
+## License
+
+Apache 2.0 (code). GNoME data under CC BY-NC 4.0 per [Google's terms](https://creativecommons.org/licenses/by-nc/4.0/).
+
+Built for the Anthropic Claude Code Hackathon, Feb 2025.
