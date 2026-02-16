@@ -1,6 +1,6 @@
 # Curious Materials
 
-DeepMind's GNoME neural net predicted 520k new materials. We let Claude go over 3k of them and ask the questions that 3k decent grad students would have asked!
+DeepMind's GNoME neural net predicted 520k new materials. We let Opus 4.6 go over 3k of them and ask the questions that 3k decent grad students would have asked!
 
 ## Quick Start
 
@@ -10,7 +10,7 @@ python3 -m http.server 8080 --directory interface
 
 Open `http://localhost:8080` in your browser and go to Materials tab
 
-## What Claude Asks
+## What Opus 4.6 Asks
 
 For each material we first generate these 5 validations traditionally:
 
@@ -22,7 +22,7 @@ For each material we first generate these 5 validations traditionally:
 | Bond Valence Sum (GII) | Global bond strain | 2 (uses DFT geometry) |
 | Space Group | Matches experimental databases | 2 |
 
-Then Claude goes over each material, looks at these validations and the **related materials**, and ask one really great question.
+Then Opus 4.6 goes over each material, looks at these validations and the **related materials**, and ask one really great question.
 
 ## Project Structure
 
@@ -41,7 +41,7 @@ gnome_auditor/
   data/                   # Ingestion + MP cross-referencing
   gold_data/              # Synth/not-synth reference CSVs (ICSD)
 data/
-  opus_questions.json     # 1,700 Claude research questions
+  opus_questions.json     # 1,700 Opus 4.6 research questions
 ```
 
 ## Regenerating Data
@@ -59,4 +59,4 @@ python -m gnome_auditor.analysis         # Generate calibration plots
 
 Apache 2.0 (code). GNoME data under CC BY-NC 4.0 per [Google's terms](https://creativecommons.org/licenses/by-nc/4.0/).
 
-Built for the Anthropic Claude Code Hackathon, Feb 2025.
+Built for the Anthropic Opus 4.6 Code Hackathon, Feb 2025.
