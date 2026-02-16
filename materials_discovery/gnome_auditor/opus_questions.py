@@ -14,6 +14,8 @@ import json
 import os
 import sys
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import anthropic
@@ -25,46 +27,43 @@ OUTPUT_PATH = DATA_DIR / "opus_questions.json"
 CHECKPOINT_PATH = DATA_DIR / "opus_questions_checkpoint.json"
 
 SYSTEM_PROMPT = """\
-You are a materials science research assistant examining validation data from an \
-independent audit of Google DeepMind's GNoME crystal structure predictions.
+You are a materials scientist and ML researcher auditing GNoME crystal predictions \
+using classical chemistry rules independent of the DFT/ML pipeline.
 
-Your job is to generate RESEARCH QUESTIONS — not answers, not claims, not judgments.
+Generate exactly ONE research question. Keep it concise (a few sentences, not a \
+giant paragraph). Self-contained with key numbers. Expert chemical insight, not statistics.
 
-## Rules
+## What makes a GREAT question:
+- References related materials in the same chemical system to identify PATTERNS \
+("3 of 13 U-Pa-O compounds show GII>2.8, all Pa-rich — is Pa5+ poorly parameterized?")
+- Proposes a specific testable hypothesis with the alternative worked out
+- Connects to known chemistry or structural archetypes
+- Challenges whether the validation method itself is appropriate for this material
 
-1. **Questions only.** Never say a structure is "stable", "unstable", "correct", or "wrong".
-2. **Cite evidence.** Every question must reference specific numbers from the validation data.
-3. **Be specific.** "Why is the GII so high?" is bad. "Why does this material show GII = 2.59 v.u. \
-(12x the ICSD baseline) despite perfect charge neutrality?" is good.
-4. **Use dataset context.** Reference the aggregate statistics provided to explain what makes this \
-material unusual compared to the dataset.
-5. **4 categories:**
-   - `anomaly` — Something unexpected in this material's validation profile
-   - `cross_validator` — Tension or agreement between different checks worth investigating
-   - `dataset_context` — How this material compares to dataset-wide patterns
-   - `oxi_state` — Questions about oxidation state assignment and its downstream effects
+## BAD questions (DO NOT write):
+- "How can Tier 1 pass while Tier 2 fails?" — obvious
+- "This is at the Xth percentile" — statistics without chemistry
+- "Should this be synthesized?" — outside scope
+- Generic "could the oxi state be wrong?" without proposing the specific alternative
 
-## Output format
+## For CLEAN materials (all checks pass, low BVS):
+Hypothesize WHY — easy chemistry? known structural archetype? over-optimized \
+relaxation? Or note an anomaly hidden in the clean profile (e.g., space group mismatch).
 
-Return a JSON array of 1-4 questions:
-```json
-[
-  {
-    "category": "anomaly",
-    "question_text": "The specific research question",
-    "evidence": "Key numbers/facts that motivate this question",
-    "priority": 1
-  }
-]
-```
+## Categories:
+- `hypothesis` — A testable claim about chemistry, structure, or prediction quality
+- `methodology` — Whether our validation tools are adequate/misleading for this material
+- `anomaly` — Something genuinely unexpected demanding explanation
 
-priority: 1 = most interesting, 2 = notable, 3 = minor observation.
-
-Return ONLY the JSON array — no other text."""
+Return JSON array with exactly 1 question: [{"category":"...","question_text":"...","priority":1}]
+Return ONLY JSON."""
 
 
-def build_material_prompt(mat, aggregate_stats):
-    """Build per-material prompt with full validation profile and dataset context."""
+def build_material_prompt(mat, aggregate_stats, family=None):
+    """Build per-material prompt with full validation profile and dataset context.
+
+    family: list of sibling materials in the same chemical system (chemsys).
+    """
     checks = mat.get("checks", {})
     formula = mat.get("reduced_formula", "?")
     mat_id = mat.get("material_id", "?")
@@ -146,6 +145,25 @@ def build_material_prompt(mat, aggregate_stats):
                  f"comp_known={mt.get('computationally_known', 0)}, "
                  f"exp_known={mt.get('experimentally_known', 0)}")
 
+    # Related materials in same chemical system
+    if family and len(family) > 1:
+        siblings = [m for m in family if m["material_id"] != mat_id]
+        if siblings:
+            lines.append("")
+            lines.append(f"## Related Materials ({len(siblings)} other predictions in same chemical system)")
+            for sib in siblings[:8]:
+                sib_checks = sib.get("checks", {})
+                bvs = sib_checks.get("bond_valence_sum", {})
+                cn = sib_checks.get("charge_neutrality", {})
+                gii = bvs.get("score", "N/A") if bvs.get("status") == "completed" else "N/A"
+                charge = cn.get("score", "N/A") if cn.get("status") == "completed" else "N/A"
+                lines.append(
+                    f"- {sib.get('reduced_formula', '?'):18s} "
+                    f"SG={sib.get('space_group', '?'):10s} "
+                    f"GII={gii!s:8s} charge={charge!s:8s} "
+                    f"match={sib.get('match_type', '?')}"
+                )
+
     return "\n".join(lines)
 
 
@@ -216,6 +234,17 @@ def get_subset_materials(materials, subset, max_count=None):
     elif subset == "novel":
         mats = [m for m in materials
                 if m.get("match_type") == "novel" and m.get("n_completed", 0) >= 3]
+    elif subset == "half":
+        # Smart 50%+ selection: all materials with >= 3 checks, sorted by
+        # most validation data first, then by most anomalous scores
+        mats = [m for m in materials if m.get("n_completed", 0) >= 3]
+        def sort_key(m):
+            # Prioritize: more checks first, then more anomalous BVS
+            n = m.get("n_completed", 0)
+            bvs = m.get("checks", {}).get("bond_valence_sum", {})
+            gii = abs(bvs.get("score", 0)) if bvs.get("status") == "completed" else 0
+            return (-n, -gii)
+        mats.sort(key=sort_key)
     else:  # all
         mats = [m for m in materials if m.get("n_completed", 0) >= 1]
 
@@ -225,7 +254,7 @@ def get_subset_materials(materials, subset, max_count=None):
     return mats
 
 
-def generate_questions(subset="interesting", max_count=None, fresh=False):
+def generate_questions(subset="interesting", max_count=None, fresh=False, timeout_min=None):
     """Main entry: generate Opus questions for materials."""
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -233,6 +262,8 @@ def generate_questions(subset="interesting", max_count=None, fresh=False):
         sys.exit(1)
 
     client = anthropic.Anthropic(api_key=api_key)
+    start_time = time.time()
+    deadline = start_time + timeout_min * 60 if timeout_min else None
 
     # Load data — try SQLite first, fall back to data.js
     materials = None
@@ -274,6 +305,27 @@ def generate_questions(subset="interesting", max_count=None, fresh=False):
     print("Computing aggregate stats...")
     aggregate_stats = compute_aggregate_stats(materials)
 
+    # Build chemsys family map for cross-material context
+    print("Building chemical system families...")
+    chemsys_lookup = {}
+    try:
+        conn2 = get_conn()
+        for row in conn2.execute("SELECT material_id, chemsys FROM mp_cross_ref"):
+            chemsys_lookup[row[0]] = row[1]
+        conn2.close()
+    except Exception:
+        pass  # Fall back to no family data
+    mat_by_id = {m["material_id"]: m for m in materials}
+    family_map = {}  # material_id -> list of family members
+    chemsys_groups = {}
+    for mid, cs in chemsys_lookup.items():
+        chemsys_groups.setdefault(cs, []).append(mid)
+    for mid, cs in chemsys_lookup.items():
+        siblings = chemsys_groups.get(cs, [])
+        if len(siblings) > 1:
+            family_map[mid] = [mat_by_id[s] for s in siblings if s in mat_by_id]
+    print(f"  {len(family_map)} materials have family context")
+
     # Select subset
     subset_mats = get_subset_materials(materials, subset, max_count)
     print(f"  Subset '{subset}': {len(subset_mats)} materials to process")
@@ -290,19 +342,32 @@ def generate_questions(subset="interesting", max_count=None, fresh=False):
     if already_done:
         print(f"  Resuming: {len(already_done)} already done, {len(to_process)} remaining")
 
+    if deadline:
+        elapsed = time.time() - start_time
+        remaining_min = (deadline - time.time()) / 60
+        print(f"  Timeout: {timeout_min} min ({remaining_min:.0f} min remaining after setup)")
+
     # Process each material
     total = len(to_process)
+    stopped_early = False
     for i, mat in enumerate(to_process):
+        # Check timeout before starting next material
+        if deadline and time.time() >= deadline:
+            print(f"\n  Timeout reached ({timeout_min} min). Stopping gracefully.")
+            stopped_early = True
+            break
+
         mat_id = mat["material_id"]
         formula = mat.get("reduced_formula", "?")
         print(f"  [{i+1}/{total}] {formula} ({mat_id})...", end=" ", flush=True)
 
-        prompt = build_material_prompt(mat, aggregate_stats)
+        family = family_map.get(mat_id)
+        prompt = build_material_prompt(mat, aggregate_stats, family=family)
 
         try:
             response = client.messages.create(
                 model="claude-opus-4-6",
-                max_tokens=2048,
+                max_tokens=768,
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -336,18 +401,27 @@ def generate_questions(subset="interesting", max_count=None, fresh=False):
         # Checkpoint every 10 materials
         if (i + 1) % 10 == 0:
             save_checkpoint(results)
-            print(f"  [Checkpoint saved: {len(results)} materials]")
+            elapsed_min = (time.time() - start_time) / 60
+            rate = (i + 1) / elapsed_min if elapsed_min > 0 else 0
+            print(f"  [Checkpoint: {len(results)} materials | {elapsed_min:.1f} min | {rate:.1f}/min]")
 
         # Rate limiting
-        time.sleep(1.0)
+        time.sleep(0.5)
 
     # Save final
+    save_checkpoint(results)  # Always save checkpoint for resume
     save_final(results)
 
     # Summary
+    elapsed_min = (time.time() - start_time) / 60
     total_questions = sum(len(r.get("questions", [])) for r in results.values())
     errors = sum(1 for r in results.values() if r.get("error"))
-    print(f"\nDone! {total_questions} questions across {len(results)} materials ({errors} errors)")
+    print(f"\n{'Paused' if stopped_early else 'Done'}! "
+          f"{total_questions} questions across {len(results)} materials "
+          f"({errors} errors) in {elapsed_min:.1f} min")
+    if stopped_early:
+        remaining = total - (i)
+        print(f"  {remaining} materials remaining — run again without --fresh to resume")
 
 
 def main():
@@ -355,8 +429,8 @@ def main():
         description="Generate Opus research questions for GNoME materials"
     )
     parser.add_argument(
-        "--subset", choices=["interesting", "novel", "all"], default="interesting",
-        help="Which materials to process (default: interesting ~30 materials)",
+        "--subset", choices=["interesting", "novel", "half", "all"], default="half",
+        help="Which materials to process (default: half — ~1700 with most data)",
     )
     parser.add_argument(
         "--max", type=int, default=None,
@@ -366,8 +440,13 @@ def main():
         "--fresh", action="store_true",
         help="Ignore checkpoint and start fresh",
     )
+    parser.add_argument(
+        "--timeout", type=int, default=None,
+        help="Stop after N minutes (saves checkpoint for resume)",
+    )
     args = parser.parse_args()
-    generate_questions(subset=args.subset, max_count=args.max, fresh=args.fresh)
+    generate_questions(subset=args.subset, max_count=args.max, fresh=args.fresh,
+                       timeout_min=args.timeout)
 
 
 if __name__ == "__main__":
