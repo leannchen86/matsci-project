@@ -21,7 +21,6 @@ materials in parallel batches. The prompt guidance and data-prep helpers below
 document the approach.
 
 Usage (data export only — questions already generated):
-    cd materials_discovery
     python -m gnome_auditor.export_data
 """
 

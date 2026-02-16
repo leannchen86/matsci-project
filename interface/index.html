@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TBD</title>
+<title>Curious Materials</title>
 <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
 <style>
 /* ============================================================
-   TBD — Theme
+   Curious Materials — Theme
    ============================================================ */
 :root {
   --so-orange: #F48024;
@@ -46,7 +46,8 @@ body {
 .header {
   background: var(--so-dark);
   height: 50px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   padding: 0 16px;
   position: sticky;
@@ -54,21 +55,6 @@ body {
   z-index: 100;
   box-shadow: 0 1px 2px rgba(0,0,0,.1);
 }
-.header-logo {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--so-white);
-  font-size: 18px;
-  font-weight: 400;
-  text-decoration: none;
-  padding: 0 8px;
-  cursor: pointer;
-}
-.header-logo .logo-stack { font-weight: 300; }
-.header-logo .logo-over { font-weight: 700; color: var(--so-orange); }
-.header-logo .logo-bond { font-weight: 300; }
-
 .header-nav {
   display: flex;
   gap: 4px;
@@ -87,9 +73,7 @@ body {
 .header-nav a.active { background: var(--so-orange); color: #fff; }
 
 .header-search {
-  flex: 1;
-  max-width: 500px;
-  margin-left: 16px;
+  width: 500px;
   position: relative;
 }
 .header-search input {
@@ -109,12 +93,8 @@ body {
 .main-container {
   max-width: 1264px;
   margin: 0 auto;
-  display: flex;
-  gap: 24px;
   padding: 24px 16px;
 }
-.content-area { flex: 1; min-width: 0; }
-.sidebar { width: 300px; flex-shrink: 0; }
 
 /* ---- Material list ---- */
 .material-list-item {
@@ -359,61 +339,6 @@ body {
   margin: 2px 0;
 }
 
-/* ---- Sidebar widgets ---- */
-.sidebar-widget {
-  background: var(--so-white);
-  border: 1px solid var(--so-border);
-  border-radius: 4px;
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-.sidebar-widget-header {
-  background: #f8f9f9;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--so-border);
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--so-text);
-}
-.sidebar-widget-body {
-  padding: 12px 14px;
-}
-
-/* ---- Interesting failures ---- */
-.hot-item {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  padding: 6px 0;
-  border-bottom: 1px solid #f0f0f0;
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--so-link);
-  text-decoration: none;
-}
-.hot-item:last-child { border-bottom: none; }
-.hot-item:hover { color: #0a95ff; }
-.hot-item .hot-icon {
-  font-size: 14px;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.hot-item .hot-label {
-  font-size: 10px;
-  color: var(--so-text-light);
-  margin-top: 2px;
-}
-
-/* Stats widget */
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
-  font-size: 12px;
-}
-.stat-row .stat-val {
-  font-weight: 700;
-}
 
 /* ---- Filters bar ---- */
 .filters-bar {
@@ -467,9 +392,6 @@ body {
   border: 1px solid var(--so-border);
   border-radius: 4px;
   padding: 16px;
-}
-.dashboard-card.full-width {
-  grid-column: 1 / -1;
 }
 .dashboard-card h3 {
   font-size: 14px;
@@ -548,7 +470,6 @@ body {
 
 /* ---- Responsive ---- */
 @media (max-width: 980px) {
-  .sidebar { display: none; }
   .dashboard-grid { grid-template-columns: 1fr; }
 }
 
@@ -715,7 +636,6 @@ sub { font-size: 0.75em; }
   <nav class="header-nav">
     <a onclick="showTab('dashboard')" data-tab="dashboard">Dashboard</a>
     <a onclick="showTab('materials')" data-tab="materials">Materials</a>
-    <a onclick="showTab('validators')" data-tab="validators">Validators</a>
   </nav>
 
   <div class="header-search">
@@ -729,7 +649,6 @@ sub { font-size: 0.75em; }
      MAIN CONTENT
      ============================================================ -->
 <div class="main-container">
-  <div class="content-area">
 
     <!-- ---- Dashboard tab ---- -->
     <div id="tab-dashboard" class="tab-content">
@@ -803,12 +722,6 @@ sub { font-size: 0.75em; }
       <div class="pagination" id="pagination"></div>
     </div>
 
-    <!-- ---- Validators tab ---- -->
-    <div id="tab-validators" class="tab-content hidden">
-      <div id="validators-content"></div>
-    </div>
-  </div>
-
 </div>
 
 <script src="/data.js"></script>
@@ -867,7 +780,6 @@ function checkDisplayName(name) {
     'pauling_rule2': "Pauling's Rule 2",
     'shannon_radii': 'Shannon Radii',
     'space_group': 'Space Group',
-    'goldschmidt': 'Goldschmidt',
   };
   return map[name] || name;
 }
@@ -1069,7 +981,6 @@ function showTab(tab, pushState) {
     a.classList.toggle('active', a.dataset.tab === tab);
   });
   if (tab === 'materials') renderMaterialsList();
-  if (tab === 'validators') renderValidators();
   if (pushState !== false) {
     history.pushState(null, '', tab === 'dashboard' ? '/' : '/' + tab);
   }
@@ -1482,108 +1393,6 @@ function navigateToMaterial(materialId) {
   history.pushState({ material: materialId }, '', '/materials/' + materialId);
 }
 
-/* ============================================================
-   Render: Sidebar
-   ============================================================ */
-
-/* ============================================================
-   Render: Validators Tab
-   ============================================================ */
-function renderValidators() {
-  const checkMeta = [
-    {
-      name: 'charge_neutrality', display: 'Charge Neutrality', tier: 1,
-      rule: 'Sum of (oxidation state x count) for all elements = 0',
-      metric: 'Residual total charge (0 = perfectly neutral)',
-      assumption: 'All O is O\u00B2\u207B. Other oxidation states from BVAnalyzer/oxi_state_guesses consensus.',
-      icon: '1',
-    },
-    {
-      name: 'shannon_radii', display: 'Shannon Radii', tier: 1,
-      rule: 'Bond lengths should match sum of Shannon ionic radii within 25%',
-      metric: 'Fraction of bonds violating the tolerance',
-      assumption: 'Shannon ionic radii (1976) with pymatgen fallback. CrystalNN for neighbor detection.',
-      icon: '2',
-    },
-    {
-      name: 'pauling_rule2', display: "Pauling's 2nd Rule", tier: 1,
-      rule: 'Electrostatic bond strength sum around each O site should equal |valence of O| = 2',
-      metric: 'Fraction of O sites with >25% deviation from expected valence sum',
-      assumption: 'Only O\u00B2\u207B sites checked. Cation CN counts anion neighbors only (Pauling\'s definition).',
-      icon: '3',
-    },
-    {
-      name: 'bond_valence_sum', display: 'Bond Valence Sum (GII)', tier: 2,
-      rule: 'Global Instability Index: RMS deviation of site BVS from formal valence',
-      metric: 'GII in valence units (v.u.) &mdash; ICSD experimental baseline ~0.2 v.u.',
-      assumption: 'BVS parameters calibrated on ICSD experimental structures, applied to DFT-relaxed P1 geometry. Elevated GII is expected for DFT structures.',
-      icon: '4',
-    },
-    {
-      name: 'space_group', display: 'Space Group Plausibility', tier: 2,
-      rule: 'Check if the predicted space group has been observed experimentally for this chemical system',
-      metric: 'Fraction of experimental entries with this space group',
-      assumption: 'ICSD entries for the same chemical system. Novel space groups aren\'t wrong \u2014 just unprecedented.',
-      icon: '5',
-    },
-  ];
-
-  let html = '';
-  for (const cm of checkMeta) {
-    const s = DATA.stats.check_stats[cm.name] || {};
-    const tierClass = cm.tier === 1 ? 'tier1' : 'tier2';
-    const tierLabel = cm.tier === 1 ? 'DFT-independent' : 'DFT-dependent';
-    const coverage = s.n_completed || 0;
-    const coveragePct = ((coverage / DATA.stats.total) * 100).toFixed(1);
-
-    html += `
-    <div class="check-answer" style="margin-bottom:16px;">
-      <div class="check-answer-header">
-        <div class="check-icon" style="background:var(--so-orange);font-size:18px;">${cm.icon}</div>
-        <div>
-          <div class="check-name" style="font-size:16px;">${cm.display}</div>
-          <div style="font-size:11px;color:var(--so-text-light);">${cm.rule}</div>
-        </div>
-        <div class="check-tier ${tierClass}">${tierLabel}</div>
-      </div>
-      <div class="check-answer-body">
-        <div class="detail-row"><strong>Metric:</strong> ${cm.metric}</div>
-        <div class="detail-row"><strong>Coverage:</strong> ${coverage.toLocaleString()} / ${DATA.stats.total.toLocaleString()} materials (${coveragePct}%)</div>
-        ${s.mean != null ? `<div class="detail-row"><strong>Mean:</strong> ${s.mean} &nbsp; <strong>Median:</strong> ${s.median} &nbsp; <strong>P25-P75:</strong> ${s.p25} &ndash; ${s.p75}</div>` : ''}
-        <div class="detail-row" style="margin-top:6px;"><strong>Assumption:</strong> ${cm.assumption}</div>
-        <div id="chart-validator-${cm.name}" style="height:180px;margin-top:12px;"></div>
-      </div>
-    </div>`;
-  }
-  document.getElementById('validators-content').innerHTML = html;
-
-  // Render mini histograms
-  for (const cm of checkMeta) {
-    const s = DATA.stats.check_stats[cm.name];
-    if (!s?.hist_bins) continue;
-    const bins = s.hist_bins;
-    const midpoints = [];
-    for (let i = 0; i < bins.length - 1; i++) midpoints.push(+((bins[i] + bins[i + 1]) / 2).toFixed(3));
-
-    Plotly.newPlot(`chart-validator-${cm.name}`, [{
-      x: midpoints,
-      y: s.hist_counts,
-      type: 'bar',
-      marker: { color: midpoints.map(v => {
-        const color = scoreColor(cm.name, v, 'completed');
-        const map = { good: '#48A868', warn: '#E8A317', bad: '#D1383D', skip: '#BFC0C3' };
-        return map[color] || '#BFC0C3';
-      })},
-    }], {
-      margin: { t: 5, b: 30, l: 45, r: 10 },
-      xaxis: { title: cm.name === 'bond_valence_sum' ? 'GII (v.u.)' : cm.name === 'charge_neutrality' ? 'Residual Charge' : 'Violation Fraction' },
-      yaxis: { title: 'Count' },
-      font: { size: 10 },
-      bargap: 0.1,
-    }, { responsive: true, displayModeBar: false });
-  }
-}
-
 function getOpusQuestions(materialId) {
   return DATA.opus_questions?.[materialId] || [];
 }
@@ -1683,8 +1492,6 @@ function handleRoute() {
     showTab('materials', false);
   } else if (path === '/materials' || path === '/materials/') {
     showTab('materials', false);
-  } else if (path === '/validators' || path === '/validators/') {
-    showTab('validators', false);
   } else {
     showTab('dashboard', false);
   }

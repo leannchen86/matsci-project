@@ -6,3 +6,4 @@ data/analysis_output/
 data/opus_questions_checkpoint.json
 __pycache__/
 *.pyc
+.DS_Store

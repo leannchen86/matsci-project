@@ -2,7 +2,6 @@
 Export SQLite data to a JS file for the Curious Materials frontend.
 
 Usage:
-    cd materials_discovery
     python -m gnome_auditor.export_data
 """
 
