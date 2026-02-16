@@ -7,7 +7,6 @@ GNoME predicted ~520k materials using graph neural networks trained on DFT data.
 ## Quick Start
 
 ```bash
-cd materials_discovery
 python3 -m http.server 8080 --directory interface
 ```
 
@@ -16,7 +15,6 @@ Open `http://localhost:8080` in your browser. Everything is pre-built — no ins
 ## Install (if regenerating data)
 
 ```bash
-cd materials_discovery
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -59,22 +57,21 @@ Each material is a "question" in SO style. The **confidence anatomy bar** (repla
 ## Project Structure
 
 ```
-materials_discovery/
-  interface/
-    index.html              # StackOverBond frontend
-    data.js                 # All 3,262 materials + validation results (13 MB)
-  gnome_auditor/
-    cli.py                  # CLI: python -m gnome_auditor.cli {stats,validate,...}
-    pipeline.py             # Validation pipeline orchestration
-    export_data.py          # SQLite -> data.js
-    opus_questions.py       # Question generation docs + prompt
-    analysis.py             # Calibration plots
-    validators/             # 6 validators + oxi state assignment
-    db/                     # SQLite schema + queries
-    data/                   # Ingestion + MP cross-referencing
-    gold_data/              # Synth/not-synth reference CSVs (ICSD)
-  data/
-    opus_questions.json     # 1,700 Claude research questions
+interface/
+  index.html              # StackOverBond frontend
+  data.js                 # All 3,262 materials + validation results (13 MB)
+gnome_auditor/
+  cli.py                  # CLI: python -m gnome_auditor.cli {stats,validate,...}
+  pipeline.py             # Validation pipeline orchestration
+  export_data.py          # SQLite -> data.js
+  opus_questions.py       # Question generation docs + prompt
+  analysis.py             # Calibration plots
+  validators/             # 6 validators + oxi state assignment
+  db/                     # SQLite schema + queries
+  data/                   # Ingestion + MP cross-referencing
+  gold_data/              # Synth/not-synth reference CSVs (ICSD)
+data/
+  opus_questions.json     # 1,700 Claude research questions
 ```
 
 ## Regenerating

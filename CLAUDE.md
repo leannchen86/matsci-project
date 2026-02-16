@@ -3,7 +3,6 @@
 ## Quick Start
 
 ```bash
-cd materials_discovery
 source .venv/bin/activate  # Python 3.12.3
 
 # Core pipeline (already run — results in SQLite)
@@ -98,9 +97,9 @@ Built SO-inspired static frontend for the validation data:
 
 ---
 
-## Current State (as of commit 54e0b1c)
+## Current State
 
-### Pipeline Results (Updated)
+### Pipeline Results
 | Validator | Computed | Coverage | Key Metric |
 |-----------|----------|----------|------------|
 | Charge Neutrality | 2,787 | 85.4% | Mean residual charge: -1.19 |
@@ -112,22 +111,22 @@ Built SO-inspired static frontend for the validation data:
 
 ### Files
 ```
-materials_discovery/
-  gnome_auditor/
-    cli.py, config.py, pipeline.py       # Core pipeline
-    claude_interface.py                   # Tool-calling chat (uses Sonnet, untested)
-    export_data.py                        # SQLite → data.js for frontend
-    analysis.py                           # Calibration plots + stats
-    data/ingest.py, mp_cross_ref.py       # Data loading
-    db/schema.py, store.py               # SQLite operations
-    validators/                           # 6 validators (base, charge, shannon, pauling, bvs, goldschmidt, space_group)
-    gold_data/                            # Synth/not-synth CSVs
-  interface/
-    index.html                            # StackOverBond frontend (single file, ~1900 lines)
-    data.js                               # Generated from SQLite (12 MB, gitignored)
-  data/
-    auditor_db/gnome_auditor.db          # SQLite database (gitignored)
-    analysis_output/                      # Generated plots (gitignored)
+gnome_auditor/
+  cli.py, config.py, pipeline.py       # Core pipeline
+  export_data.py                        # SQLite -> data.js for frontend
+  opus_questions.py                     # Question generation docs + prompt
+  analysis.py                           # Calibration plots + stats
+  data/ingest.py, mp_cross_ref.py       # Data loading
+  db/schema.py, store.py               # SQLite operations
+  validators/                           # 6 validators (base, charge, shannon, pauling, bvs, goldschmidt, space_group)
+  gold_data/                            # Synth/not-synth CSVs
+interface/
+  index.html                            # StackOverBond frontend (single file, ~1900 lines)
+  data.js                               # Generated from SQLite (13 MB)
+data/
+  auditor_db/gnome_auditor.db          # SQLite database (gitignored)
+  opus_questions.json                   # 1,700 Claude research questions
+  analysis_output/                      # Generated plots (gitignored)
 ```
 
 ---
@@ -148,12 +147,8 @@ Something that **unlocks a whole new level of experience** — not chat, not wra
 2. Dashboard narrator (LLM wrapper)
 3. Opus writing validators (violates ground truth principle, trickles systematic errors)
 
-### Possible Directions Still Open
-- Something around the "building training data for future AI" thesis
-- Something that makes the platform MORE than a data viewer
-- Something that demonstrates an unexpected Opus 4.6 capability
-- Must respect: Opus doesn't judge/evaluate, classical chemistry IS the ground truth
-- Should feel like a genuine innovation, not a feature bolted on
+### What We Did: Claude as Curious Researcher
+1,700 materials have a Claude-generated research question displayed in the interface ("Claude asks:"). Questions use cross-material family context (sibling compounds sharing the same chemical system) to identify patterns, propose testable hypotheses, and challenge the audit methodology. Generated via 68 parallel Claude Code subagents.
 
 ### The Broader Vision
 "Stack Overflow for materials science — hoping that one day AI will be trained on the data here, and take over the website" (tongue-in-cheek reference to SO's traffic decline post-AI). The platform should generate structured, traceable data that improves future materials AI.
@@ -162,28 +157,21 @@ Something that **unlocks a whole new level of experience** — not chat, not wra
 
 ## Interface Design Decisions
 
-### SO → StackOverBond Mapping
+### SO -> StackOverBond Mapping
 | Stack Overflow | StackOverBond |
 |----------------|---------------|
 | Question | Material (predicted structure) |
 | Answer | Validation check result |
 | Upvote/downvote | Confidence anatomy bar |
-| Accepted answer ✅ | MP experimental confirmation |
+| Accepted answer | MP experimental confirmation |
 | Tags | Compound class + methodology tags |
 | User reputation | Check tier (Tier 1 = trusted, Tier 2 = peer review) |
 | Hot Network Questions | "Interesting Failures" (4 algorithmic categories) |
 
-### Trolling Elements
-- "Logged in as GNoME 🤖" with 1 rep
-- "Predicted by GNoME, audited 0.3s ago"
-- "Stack Overflow took 15 years to make AI good enough to kill it. We're speedrunning."
-- Badges: Trusted Validator, Peer Review, Pioneer, Shapeshifter
-- "Building the dataset we wish AI already had™"
-
 ### Demo Flow (Planned)
 1. **Hook:** Lead with an "Interesting Failure" (PaMoO4 — all Tier 1 pass, Tier 2 fails dramatically)
 2. **Show the interface:** SO-familiar layout, confidence bars, traceable assumptions
-3. **Opus 4.6 moment:** [TO BE DETERMINED — this is the gap]
+3. **Opus 4.6 moment:** Claude's research questions — cross-material pattern detection
 4. **Punchline:** "We're building the dataset we wish AI already had"
 
 ---
@@ -192,13 +180,12 @@ Something that **unlocks a whole new level of experience** — not chat, not wra
 
 ```bash
 # If you need to regenerate data.js from the SQLite database:
-cd materials_discovery
 source .venv/bin/activate
-python -m gnome_auditor.export_data  # → interface/data.js
+python -m gnome_auditor.export_data  # -> interface/data.js
 
 # If you need to rerun the full pipeline (requires pymatgen, ~17 min):
 python -m gnome_auditor.cli validate
 
 # If you need to rerun analysis plots:
-python -m gnome_auditor.analysis  # → data/analysis_output/
+python -m gnome_auditor.analysis  # -> data/analysis_output/
 ```

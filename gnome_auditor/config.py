@@ -3,7 +3,7 @@
 from pathlib import Path
 
 # Base paths
-PROJECT_ROOT = Path(__file__).resolve().parent.parent  # materials_discovery/
+PROJECT_ROOT = Path(__file__).resolve().parent.parent  # repo root
 DATA_DIR = PROJECT_ROOT / "data"
 GNOME_DATA_DIR = DATA_DIR / "gnome_data"
 AUDITOR_DB_DIR = DATA_DIR / "auditor_db"

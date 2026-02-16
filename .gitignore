@@ -1,9 +1,9 @@
-materials_discovery/.venv/
-materials_discovery/data/gnome_data/*.zip
-materials_discovery/data/gnome_data/*.csv
-materials_discovery/data/auditor_db/
-materials_discovery/data/extracted_cifs/
-materials_discovery/data/analysis_output/
-materials_discovery/data/opus_questions_checkpoint.json
+.venv/
+data/gnome_data/*.zip
+data/gnome_data/*.csv
+data/auditor_db/
+data/extracted_cifs/
+data/analysis_output/
+data/opus_questions_checkpoint.json
 __pycache__/
 *.pyc
