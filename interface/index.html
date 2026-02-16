@@ -108,8 +108,28 @@ body {
   cursor: pointer;
   transition: background .1s;
 }
+.material-list-item { position: relative; }
 .material-list-item:last-child { border-bottom: 1px solid var(--so-border); }
 .material-list-item:hover { background: #f8f9f9; }
+.copy-ask-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 10px;
+  border: 1px solid var(--so-border);
+  border-radius: 3px;
+  background: var(--so-white);
+  color: var(--so-text-light);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s;
+  white-space: nowrap;
+  z-index: 5;
+}
+.material-list-item:hover .copy-ask-btn { opacity: 1; }
+.copy-ask-btn:hover { background: var(--so-orange); color: #fff; border-color: var(--so-orange); }
 .material-list-item.expanded { background: var(--so-yellow-bg); border-left: 3px solid var(--so-orange); position: sticky; top: 50px; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
 .material-list-item.expanded .mat-question { display: none; }
 .material-list-item.expanded .mat-question.restore { display: block; }
@@ -849,6 +869,51 @@ function getGII(mat) {
   return null;
 }
 
+function copyMaterialPrompt(materialId, btn) {
+  const mat = DATA.materials.find(m => m.material_id === materialId);
+  if (!mat) return;
+
+  const qs = getOpusQuestions(materialId);
+  const question = qs.length ? qs.sort((a, b) => (a.priority || 2) - (b.priority || 2))[0].question_text : '';
+
+  const checkOrder = ['charge_neutrality', 'shannon_radii', 'pauling_rule2', 'bond_valence_sum', 'space_group'];
+  const checkLines = checkOrder.map(cn => {
+    const c = mat.checks?.[cn];
+    if (!c || c.status !== 'completed') return `  ${checkDisplayName(cn)}: skipped`;
+    if (cn === 'bond_valence_sum') return `  Bond Valence Sum: GII = ${c.score.toFixed(3)} v.u. (experimental baseline ~0.2)`;
+    if (cn === 'charge_neutrality') return `  Charge Neutrality: ${c.score === 0 ? 'neutral' : 'residual charge ' + c.score}`;
+    if (cn === 'pauling_rule2') return `  Pauling Rule 2: ${(c.score * 100).toFixed(1)}% of O sites violate`;
+    if (cn === 'shannon_radii') return `  Shannon Radii: ${(c.score * 100).toFixed(1)}% of bonds deviate >25%`;
+    if (cn === 'space_group') return `  Space Group: ${c.score > 0 ? (c.score * 100).toFixed(1) + '% experimental match' : 'no experimental match'}`;
+    return `  ${checkDisplayName(cn)}: ${c.score}`;
+  }).join('\n');
+
+  const feStr = mat.formation_energy_per_atom != null ? mat.formation_energy_per_atom.toFixed(3) + ' eV/atom' : 'unknown';
+  const bgStr = mat.bandgap != null ? mat.bandgap.toFixed(3) + ' eV' : 'unknown';
+
+  const prompt = `I'm investigating ${mat.reduced_formula}, a ${matchTypeLabel(mat.match_type).toLowerCase()} ${mat.compound_class || 'compound'} predicted by Google DeepMind's GNoME.
+
+Crystal: ${mat.crystal_system}, space group ${mat.space_group} (#${mat.space_group_number}), ${mat.n_sites} sites
+Formation energy: ${feStr}, Band gap: ${bgStr}
+
+Validation checks (classical chemistry, independent of the ML model):
+${checkLines}
+
+My question:
+${question}
+
+What do you think?`;
+
+  navigator.clipboard.writeText(prompt).then(() => {
+    btn.textContent = 'Copied!';
+    btn.dataset.tip = 'Copied to clipboard';
+    setTimeout(() => {
+      btn.innerHTML = 'Copy material &amp; Ask AI';
+      btn.dataset.tip = "Copy this material's profile and Claude's question & paste into any AI to dig deeper!";
+    }, 2000);
+  });
+}
+
 function tagHTML(text, cls) {
   return `<span class="tag ${cls || ''}">${text}</span>`;
 }
@@ -1105,6 +1170,7 @@ function renderMaterialsList() {
         <div class="mat-tags">${tags}</div>
         ${(() => { const qs = getOpusQuestions(mat.material_id); return qs.length ? `<div class="mat-question" ${isExpanded ? 'id="row-claude-q"' : ''}><span style="color:var(--so-orange);font-style:normal;font-weight:600;">Claude asks:</span> ${qs.sort((a,b) => (a.priority||2) - (b.priority||2))[0].question_text}</div>` : ''; })()}
       </div>
+      ${getOpusQuestions(mat.material_id).length ? `<button class="copy-ask-btn" data-tip="Copy this material's profile and Claude's question & paste into any AI to dig deeper!" onclick="event.stopPropagation(); copyMaterialPrompt('${mat.material_id}', this)">Copy material &amp; Ask AI</button>` : ''}
     </div>`;
 
     // Detail panel

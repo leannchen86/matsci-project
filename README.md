@@ -8,15 +8,7 @@ DeepMind's GNoME neural net predicted 520k new materials. We let Claude go over 
 python3 -m http.server 8080 --directory interface
 ```
 
-Open `http://localhost:8080` in your browser
-
-## Install
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+Open `http://localhost:8080` in your browser and go to Materials tab
 
 ## What Claude Asks
 
@@ -55,7 +47,9 @@ data/
 ## Regenerating Data
 
 ```bash
+python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
 python -m gnome_auditor.export_data      # Regenerate data.js
 python -m gnome_auditor.cli stats        # View pipeline results
 python -m gnome_auditor.analysis         # Generate calibration plots
