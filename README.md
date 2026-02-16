@@ -2,6 +2,8 @@
 
 DeepMind's GNoME neural net predicted 520k new materials. We let Claude Opus 4.6 go over 3k of them and ask the questions that 3k decent grad students would have asked!
 
+**The goal:** amplify researchers' judgment by surfacing the signals that matter — validation red flags, chemical family context, and targeted research questions — so they can focus on what to synthesize next, not on sifting through data. We use Claude's reasoning to spot patterns across related compounds and 68 parallel Claude Code subagents to generate 1,700 research questions at scale.
+
 ## Quick Start
 
 ```bash
@@ -59,4 +61,4 @@ python -m gnome_auditor.analysis         # Generate calibration plots
 
 Apache 2.0 (code). GNoME data under CC BY-NC 4.0 per [Google's terms](https://creativecommons.org/licenses/by-nc/4.0/).
 
-Built for the Anthropic Claude Opus 4.6 Code Hackathon, Feb 2025.
+Built for the Anthropic Claude Code Hackathon, Feb 2025.
