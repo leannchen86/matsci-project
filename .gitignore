@@ -1,7 +1,6 @@
 .venv/
 data/gnome_data/*.zip
 data/gnome_data/*.csv
-data/auditor_db/
 data/extracted_cifs/
 data/analysis_output/
 data/opus_questions_checkpoint.json
