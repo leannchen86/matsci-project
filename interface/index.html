@@ -520,7 +520,7 @@ body {
 .hero-banner .hero-sub {
   font-size: 14px;
   color: #b6bdc4;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 /* ---- Pagination ---- */
@@ -596,7 +596,7 @@ sub { font-size: 0.75em; }
   border-bottom: 1px solid #f0dcc0;
   cursor: pointer;
 }
-.opus-dashboard-item:last-child { border-bottom: none; }
+.opus-dashboard-item:last-child { border-bottom: none; padding-bottom: 0; }
 .opus-dashboard-item:hover { background: #FFF0E0; margin: 0 -16px; padding: 8px 16px; }
 .opus-dashboard-item .opus-d-formula {
   font-size: 13px;
@@ -712,10 +712,6 @@ sub { font-size: 0.75em; }
      HEADER
      ============================================================ -->
 <header class="header">
-  <a class="header-logo" onclick="showTab('dashboard')">
-    <span class="logo-stack">T</span><span class="logo-over">B</span><span class="logo-bond">D</span>
-  </a>
-
   <nav class="header-nav">
     <a onclick="showTab('dashboard')" data-tab="dashboard">Dashboard</a>
     <a onclick="showTab('materials')" data-tab="materials">Materials</a>
@@ -740,8 +736,7 @@ sub { font-size: 0.75em; }
       <div class="hero-banner">
         <h2 style="color:var(--so-orange);font-weight:600;">Claude is curious about materials</h2>
         <div class="hero-sub">
-          Asking textbook chemistry questions about 3,262 ternary oxygen-containing compounds
-          from GNoME's ~380k stable predictions &mdash; no DFT, no ML, just classical rules
+          Go to <a href="/materials" style="color:var(--so-orange);text-decoration:underline;cursor:pointer;" onclick="event.preventDefault();showTab('materials')">Materials</a> and see what Claude thinks of them!
         </div>
       </div>
 
@@ -763,10 +758,6 @@ sub { font-size: 0.75em; }
         <div class="dashboard-card">
           <h3>Pauling Rule 2 Violations</h3>
           <div id="chart-pauling" style="height:220px;"></div>
-        </div>
-        <div class="dashboard-card full-width">
-          <h3>Scores by Compound Class</h3>
-          <div id="chart-compound" style="height:260px;"></div>
         </div>
       </div>
     </div>
@@ -818,14 +809,6 @@ sub { font-size: 0.75em; }
     </div>
   </div>
 
-  <!-- ---- Sidebar ---- -->
-  <aside class="sidebar">
-    <div class="sidebar-widget">
-      <div class="sidebar-widget-header">Interesting Failures</div>
-      <div class="sidebar-widget-body" id="hot-questions"></div>
-    </div>
-
-  </aside>
 </div>
 
 <script src="/data.js"></script>
@@ -1085,7 +1068,6 @@ function showTab(tab, pushState) {
   document.querySelectorAll('.header-nav a').forEach(a => {
     a.classList.toggle('active', a.dataset.tab === tab);
   });
-  document.querySelector('.sidebar').style.display = tab === 'dashboard' ? '' : 'none';
   if (tab === 'materials') renderMaterialsList();
   if (tab === 'validators') renderValidators();
   if (pushState !== false) {
@@ -1486,38 +1468,6 @@ function renderDashboard() {
     }, { responsive: true, displayModeBar: false });
   }
 
-  // Compound class boxplot
-  const classes = Object.keys(stats.compound_classes);
-  const classTraces = [];
-  for (const cn of ['bond_valence_sum', 'pauling_rule2']) {
-    const vals = {};
-    for (const cls of classes) vals[cls] = [];
-    for (const mat of DATA.materials) {
-      const c = mat.checks?.[cn];
-      if (c?.status === 'completed' && c.score != null) {
-        vals[mat.compound_class]?.push(c.score);
-      }
-    }
-    for (const cls of classes) {
-      if (vals[cls].length > 0) {
-        classTraces.push({
-          y: vals[cls],
-          name: `${cls} (${checkDisplayName(cn)})`,
-          x: vals[cls].map(() => `${cls}<br>${checkDisplayName(cn)}`),
-          type: 'box',
-          boxpoints: false,
-          marker: { color: cn === 'bond_valence_sum' ? '#E8A317' : '#0074CC' },
-        });
-      }
-    }
-  }
-  Plotly.newPlot('chart-compound', classTraces, {
-    margin: { t: 10, b: 80, l: 50, r: 10 },
-    yaxis: { title: 'Score' },
-    showlegend: false,
-    font: { size: 10 },
-    boxmode: 'group',
-  }, { responsive: true, displayModeBar: false });
 
 }
 
@@ -1535,26 +1485,6 @@ function navigateToMaterial(materialId) {
 /* ============================================================
    Render: Sidebar
    ============================================================ */
-function renderSidebar() {
-  // Interesting failures
-  let hotHtml = '';
-  const categories = DATA.interesting_failures || {};
-  for (const [catKey, cat] of Object.entries(categories)) {
-    if (!cat.items?.length) continue;
-    hotHtml += `<div style="font-size:11px;font-weight:600;color:var(--so-text);margin:8px 0 4px;">${cat.label}</div>`;
-    for (const item of cat.items.slice(0, 3)) {
-      const giiStr = item.gii != null ? `GII: ${item.gii.toFixed(1)}` : '';
-      hotHtml += `<div class="hot-item" onclick="navigateToMaterial('${item.material_id}')">
-        <span class="hot-icon">&bull;</span>
-        <div>
-          <div>${formatFormula(item.reduced_formula)}</div>
-          <div class="hot-label">${giiStr} ${item.match_type === 'novel' ? '&middot; Novel' : ''}</div>
-        </div>
-      </div>`;
-    }
-  }
-  document.getElementById('hot-questions').innerHTML = hotHtml;
-}
 
 /* ============================================================
    Render: Validators Tab
@@ -1671,32 +1601,19 @@ function renderOpusQuestionsHTML(materialId) {
 }
 
 function renderOpusDashboardWidget() {
-  const questions = DATA.opus_questions || {};
-  const allQs = [];
-  for (const [matId, qs] of Object.entries(questions)) {
-    const mat = DATA.materials.find(m => m.material_id === matId);
-    for (const q of qs) {
-      allQs.push({ ...q, material_id: matId, formula: mat?.reduced_formula || matId });
-    }
-  }
-
-  // Sort by priority, take top 5
-  allQs.sort((a, b) => (a.priority || 2) - (b.priority || 2));
-  const top = allQs.slice(0, 5);
-
-  if (!top.length) {
-    document.getElementById('opus-dashboard').innerHTML =
-      '<h3>Claude Questions</h3><div style="font-size:12px;color:var(--so-text-light);">No questions generated yet. Run: <code>python -m gnome_auditor.opus_questions</code></div>';
-    return;
-  }
-
-  let html = `<h3>Claude asks...</h3>`;
-  for (const q of top) {
-    html += `<div class="opus-dashboard-item" onclick="navigateToMaterial('${q.material_id}')">
-      <span class="opus-d-formula">${formatFormula(q.formula)}</span>
-      <span class="opus-d-question">${q.question_text}</span>
+  const suspicious = [
+    { id: 'a62d9c9007', formula: 'PaMoO4', desc: 'Chemically valid, geometrically unstable' },
+    { id: '0e2d26aba9', formula: 'RbMn14O28', desc: 'Oxidation state disagreement' },
+    { id: '0102fff5f0', formula: 'Pu7IO24', desc: 'Geometrically strained but chemically valid' },
+  ];
+  let html = `<h3>Claude Finds These Materials Suspicious</h3>`;
+  for (const item of suspicious) {
+    html += `<div class="opus-dashboard-item" onclick="navigateToMaterial('${item.id}')">
+      <span class="opus-d-formula">${formatFormula(item.formula)}</span>
+      <span class="opus-d-question">${item.desc}</span>
     </div>`;
   }
+  html += `<div style="margin-top:8px;"><a href="/materials" style="color:var(--so-orange);font-size:12px;cursor:pointer;" onclick="event.preventDefault();showTab('materials')">See more&hellip;</a></div>`;
   document.getElementById('opus-dashboard').innerHTML = html;
 }
 
@@ -1705,7 +1622,6 @@ function renderOpusDashboardWidget() {
    ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   renderDashboard();
-  renderSidebar();
   renderOpusDashboardWidget();
 
   // Shared tooltip element

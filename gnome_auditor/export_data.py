@@ -1,5 +1,5 @@
 """
-Export SQLite data to a JS file for the StackOverBond frontend.
+Export SQLite data to a JS file for the Curious Materials frontend.
 
 Usage:
     cd materials_discovery
@@ -405,7 +405,7 @@ def run_export():
         "meta": {
             "total_materials": len(materials),
             "export_timestamp": datetime.now().isoformat(),
-            "platform": "StackOverBond",
+            "platform": "Curious Materials",
             "opus_questions_count": len(opus_questions),
         },
     }

@@ -1,4 +1,4 @@
-# StackOverBond — GNoME Auditor
+# Curious Materials — GNoME Auditor
 
 ## Quick Start
 
@@ -24,7 +24,7 @@ Independent audit of GNoME crystal predictions using classical chemistry rules (
 ## Files
 
 ```
-interface/index.html           # StackOverBond frontend
+interface/index.html           # Curious Materials frontend
 interface/data.js              # All 3,262 materials + validations (13 MB)
 gnome_auditor/
   cli.py                       # CLI entry point
