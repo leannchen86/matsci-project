@@ -47,9 +47,18 @@ def cmd_chat(args):
 
 
 def cmd_opus(args):
-    """Generate Opus research questions for materials."""
-    from gnome_auditor.opus_questions import generate_questions
-    generate_questions(subset=args.subset, max_count=args.max, fresh=args.fresh)
+    """Show info about Opus research questions."""
+    from pathlib import Path
+    opus_path = Path(__file__).parent.parent / "data" / "opus_questions.json"
+    if opus_path.exists():
+        import json
+        with open(opus_path) as f:
+            data = json.load(f)
+        print(f"Opus questions: {len(data)} materials in {opus_path}")
+        print("To bake into data.js: python -m gnome_auditor.export_data")
+    else:
+        print("No opus_questions.json found.")
+        print("Questions are generated using Claude Code subagents — see opus_questions.py for details.")
 
 
 def cmd_stats(args):
@@ -121,11 +130,7 @@ def main():
     sub.set_defaults(func=cmd_chat)
 
     # opus
-    sub = subparsers.add_parser("opus", help="Generate Opus research questions")
-    sub.add_argument("--subset", choices=["interesting", "novel", "all"], default="interesting",
-                     help="Which materials to process (default: interesting)")
-    sub.add_argument("--max", type=int, default=None, help="Max materials to process")
-    sub.add_argument("--fresh", action="store_true", help="Ignore checkpoint, start fresh")
+    sub = subparsers.add_parser("opus", help="Show Opus research questions status")
     sub.set_defaults(func=cmd_opus)
 
     # stats
