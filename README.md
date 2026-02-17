@@ -24,7 +24,7 @@ For each material we first generate these 5 validations traditionally:
 | Bond Valence Sum (GII) | Global bond strain | 2 (uses DFT geometry) |
 | Space Group | Matches experimental databases | 2 |
 
-Then Claude Opus 4.6 goes over each material, looks at these validations and the **related materials**, and ask one really great question.
+Then Claude Opus 4.6 goes over each material, looks at these validations and the **related materials**, and ask one question.
 
 ## Project Structure
 
